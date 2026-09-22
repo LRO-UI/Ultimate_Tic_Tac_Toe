@@ -111,16 +111,19 @@
   .menu-head p{ margin:0; color:var(--ink-soft); }
 
   .modes{
-    display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:28px;
-    width:min(100%, 1080px);
+    display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:24px;
+    width:min(100%, 1200px);
   }
+  /* center the "coming soon" pair under the four playable modes */
+  .modes-title + .mode.locked{ grid-column:2; }
   .mode{
     background:var(--panel);
-    padding:44px 34px 36px;
+    padding:40px 28px 32px;
     display:flex; flex-direction:column; align-items:center; text-align:center; gap:16px;
   }
   .mode-art{ width:min(140px, 60%); aspect-ratio:1; margin-bottom:6px; }
   .mode-art svg{ width:100%; height:100%; display:block; }
+  .mode-actions{ display:grid; gap:10px; width:100%; position:relative; z-index:1; }
   .mode h2{ font-family:var(--font-display); font-weight:500; font-size:1.55rem; margin:0; }
   .mode p{ margin:0 0 10px; color:var(--ink-soft); font-size:.95rem; max-width:32ch; flex:1; }
   .mode .tool{ position:relative; z-index:1; }
@@ -243,6 +246,9 @@
   .cell:focus-visible{ outline-offset:-8px; }
   .cell svg{ width:100%; height:100%; display:block; overflow:visible; transition:opacity .3s ease; }
   .board.done .cell:not(.hit) svg{ opacity:.28; }
+  .cell svg{ transition:opacity .3s ease, transform .3s ease; }
+  .cell.fading svg{ opacity:.3; }
+  .cell.vanishing svg{ opacity:0; transform:scale(.8); }
   .cell.fresh{ animation:fresh 1.4s ease-out; }
   @keyframes fresh{ 0%, 25%{ background:rgba(63,111,168,.32); } 100%{ background:transparent; } }
 
@@ -253,6 +259,10 @@
   .winline{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; overflow:visible; }
   .winline .draw{ animation-duration:.5s; }
 
+  @media (max-width: 1100px){
+    .modes{ grid-template-columns:repeat(2, minmax(0,1fr)); width:min(100%, 760px); }
+    .modes-title + .mode.locked{ grid-column:auto; }
+  }
   @media (max-width: 860px){
     .modes{ grid-template-columns:1fr; width:min(100%, 440px); }
     .game{ grid-template-columns:1fr; grid-template-rows:auto auto; height:auto; min-height:100%; }
@@ -269,6 +279,7 @@
   @media (prefers-reduced-motion: reduce){
     .draw{ animation:none; stroke-dashoffset:0; }
     .status-main.reveal, .cell.fresh{ animation:none; }
+    .cell svg{ transition:none; }
   }
 </style>
 </head>
@@ -309,9 +320,7 @@
       <a class="tool primary" href="#extreme">Play Extreme</a>
     </section>
 
-    <div class="group-title modes-title">Coming soon</div>
-
-    <section class="mode framed locked">
+    <section class="mode framed">
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="mode-art" aria-hidden="true">
         <svg viewBox="0 0 120 120">
@@ -326,8 +335,13 @@
       </div>
       <h2>Fading</h2>
       <p>Each player keeps only three marks. Place a fourth and your oldest one disappears, so the game never ends in a draw.</p>
-      <button class="tool" type="button" disabled>Not playable yet</button>
+      <div class="mode-actions">
+        <a class="tool primary" href="#fading-ai">Play vs AI</a>
+        <a class="tool" href="#fading-pvp">Play with a friend</a>
+      </div>
     </section>
+
+    <div class="group-title modes-title">Coming soon</div>
 
     <section class="mode framed locked">
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
@@ -438,7 +452,9 @@
   const MODES = {
     ai:      { title:'Versus AI',   names:{ X:'You',      O:'AI' }, ai:'easy', grow:false },
     pvp:     { title:'Two players', names:{ X:'Player X', O:'Player O' }, ai:null, grow:false },
-    extreme: { title:'Extreme',     names:{ X:'You',      O:'AI' }, ai:'hard', grow:true }
+    extreme: { title:'Extreme',     names:{ X:'You',      O:'AI' }, ai:'hard', grow:true },
+    'fading-ai':  { title:'Fading vs AI',        names:{ X:'You',      O:'AI' },       ai:'fade', fade:true },
+    'fading-pvp': { title:'Fading, two players', names:{ X:'Player X', O:'Player O' }, ai:null,   fade:true }
   };
   const STORAGE_KEY = 'tictactoe-casework-v1';
 
@@ -471,7 +487,7 @@
   };
 
   /* ---------- Start screen art ---------- */
-  document.querySelectorAll('.mode-art').forEach(el => {
+  document.querySelectorAll('.mode-art[data-cells]').forEach(el => {
     const ext = !!el.dataset.extreme;
     const s = ext ? 30 : 40;                 // cell size inside a 120 viewBox
     const off = ext ? 0 : 0;
@@ -501,6 +517,8 @@
   let mode = null, store = null, cfg = null;
   let grid, rows, cols, turn, over, roundNo, notice = '', aiTimer = null;
   let cellEls = [];
+  const FADE_LIMIT = 3;
+  let marks = { X:[], O:[] }, moveCount = 0;
   const winSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   winSvg.setAttribute('class', 'winline');
   winSvg.setAttribute('aria-hidden', 'true');
@@ -564,6 +582,8 @@
     turn = store.starter;
     over = false;
     notice = '';
+    marks = { X:[], O:[] };
+    moveCount = 0;
     roundNo = store.round;
     boardEl.classList.remove('done');
     buildBoard();
@@ -578,7 +598,17 @@
   }
 
   function place(r, c) {
+    if (cfg.fade) {
+      if (marks[turn].length === FADE_LIMIT) {
+        const [or, oc] = marks[turn].shift();
+        grid[or][oc] = null;
+        vanish(or, oc);
+      }
+      marks[turn].push([r, c]);
+    }
+    moveCount++;
     grid[r][c] = turn;
+    cellEls[r][c].classList.remove('fading', 'vanishing');
     cellEls[r][c].innerHTML = markSVG(turn, true);
     notice = '';
     const line = winningRun(r, c);
@@ -593,6 +623,17 @@
     }
     render();
     maybeAI(delay);
+  }
+
+  /* Fading: fade the oldest mark out, then clear the square */
+  function vanish(r, c) {
+    const el = cellEls[r][c];
+    el.classList.remove('fading');
+    el.classList.add('vanishing');
+    setTimeout(() => {
+      el.classList.remove('vanishing');
+      if (!grid[r][c]) el.innerHTML = '';
+    }, 320);
   }
 
   /* Longest same-mark run through (r, c); returns cells if it reaches WIN_LEN */
@@ -641,7 +682,7 @@
   function finish(result, line) {
     over = true;
     store.scores[result]++;
-    store.history.unshift({ round:roundNo, result, t:Date.now(), size:sizeText(rows, cols) });
+    store.history.unshift({ round:roundNo, result, t:Date.now(), size:sizeText(rows, cols), moves:moveCount });
     store.history = store.history.slice(0, 40);
     store.round++;
     store.starter = store.starter === 'X' ? 'O' : 'X';
@@ -750,11 +791,65 @@
     return bestByHeuristic(empty);
   }
 
+  /* ---------- Fading AI: looks ahead, simulating the disappearing marks ---------- */
+  const FLAT_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const FADE_DEPTH = 5;          // raise for a tougher AI, lower for an easier one
+  const FADE_SLIP = 0.1;         // chance of playing a safe but not best move
+
+  const lineWin = (g, p) => FLAT_LINES.some(([a, b, c]) => g[a] === p && g[b] === p && g[c] === p);
+
+  function fadeSearch(g, q, p, depth, alpha, beta) {
+    const other = p === 'X' ? 'O' : 'X';
+    let best = p === 'O' ? -Infinity : Infinity;
+    for (let i = 0; i < 9; i++) {
+      if (g[i]) continue;
+      const removed = q[p].length === FADE_LIMIT ? q[p].shift() : -1;
+      if (removed >= 0) g[removed] = null;
+      g[i] = p; q[p].push(i);
+
+      let score;
+      if (lineWin(g, p)) score = p === 'O' ? 100 + depth : -100 - depth;
+      else if (depth === 0) score = 0;
+      else score = fadeSearch(g, q, other, depth - 1, alpha, beta);
+
+      q[p].pop(); g[i] = null;
+      if (removed >= 0) { q[p].unshift(removed); g[removed] = p; }
+
+      if (p === 'O') { best = Math.max(best, score); alpha = Math.max(alpha, score); }
+      else { best = Math.min(best, score); beta = Math.min(beta, score); }
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+
+  function aiPickFade() {
+    const g = grid.flat();
+    const q = { X: marks.X.map(([r, c]) => r * 3 + c), O: marks.O.map(([r, c]) => r * 3 + c) };
+    const scored = [];
+    for (let i = 0; i < 9; i++) {
+      if (g[i]) continue;
+      const removed = q.O.length === FADE_LIMIT ? q.O.shift() : -1;
+      if (removed >= 0) g[removed] = null;
+      g[i] = 'O'; q.O.push(i);
+      const score = lineWin(g, 'O') ? 1000 : fadeSearch(g, q, 'X', FADE_DEPTH - 1, -Infinity, Infinity);
+      q.O.pop(); g[i] = null;
+      if (removed >= 0) { q.O.unshift(removed); g[removed] = 'O'; }
+      scored.push({ i, score: score + (i === 4 ? 0.3 : 0) + Math.random() * 0.2 });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    let pick = scored[0];
+    if (pick.score < 900 && Math.random() < FADE_SLIP) {
+      const safe = scored.filter(m => m.score > -50);
+      if (safe.length) pick = safe[Math.floor(Math.random() * safe.length)];
+    }
+    return [Math.floor(pick.i / 3), pick.i % 3];
+  }
+
   function maybeAI(delay) {
     if (!cfg.ai || over || turn !== 'O') return;
     clearTimeout(aiTimer);
     aiTimer = setTimeout(() => {
-      const [r, c] = aiPick(cfg.ai);
+      const [r, c] = cfg.ai === 'fade' ? aiPickFade() : aiPick(cfg.ai);
       place(r, c);
     }, delay);
   }
@@ -762,7 +857,10 @@
   /* ---------- Rendering ---------- */
   function render() {
     const n = names();
-    roundLabel.textContent = cfg.grow ? `Round ${roundNo}, board ${sizeText(rows, cols)}` : `Round ${roundNo}`;
+    roundLabel.textContent = cfg.grow ? `Round ${roundNo}, board ${sizeText(rows, cols)}`
+      : cfg.fade ? `Round ${roundNo}, move ${over ? moveCount : moveCount + 1}`
+      : `Round ${roundNo}`;
+    const fadesNext = cfg.fade && !over && marks[turn].length === FADE_LIMIT;
 
     statusMain.classList.remove('reveal', 'win');
     statusHint.classList.toggle('notice', !!notice);
@@ -774,26 +872,33 @@
       statusMain.classList.add('reveal');
       statusHint.textContent = last.result === 'D'
         ? 'Nobody got three in a row.'
-        : (cfg.grow ? `Won on a ${last.size} board.` : 'Start a new round when you are ready.');
+        : cfg.grow ? `Won on a ${last.size} board.`
+        : cfg.fade ? `Won in ${last.moves} moves.`
+        : 'Start a new round when you are ready.';
     } else if (cfg.ai) {
       statusMain.textContent = turn === 'X' ? 'Your turn' : 'AI is thinking';
-      statusHint.textContent = notice || (turn === 'X' ? 'You play X. Get three in a row.' : 'The AI plays O.');
+      statusHint.textContent = notice || (turn === 'X'
+        ? (fadesNext ? 'Your dimmed X disappears when you play.' : cfg.fade ? 'You play X. Only three marks each.' : 'You play X. Get three in a row.')
+        : 'The AI plays O.');
     } else {
       statusMain.textContent = turn + ' to move';
-      statusHint.textContent = n[turn] + ', pick a square.';
+      statusHint.textContent = fadesNext ? `${n[turn]}, your dimmed ${turn} disappears when you play.` : n[turn] + ', pick a square.';
     }
 
     const lockBoard = over || (cfg.ai && turn === 'O');
+    const fadeCell = fadesNext ? marks[turn][0] : null;
     cellEls.forEach((rowEls, r) => rowEls.forEach((el, c) => {
+      const isFading = !!fadeCell && fadeCell[0] === r && fadeCell[1] === c;
+      el.classList.toggle('fading', isFading);
       el.disabled = lockBoard || !!grid[r][c];
-      el.setAttribute('aria-label', `Row ${r + 1}, column ${c + 1}, ${grid[r][c] || 'empty'}`);
+      el.setAttribute('aria-label', `Row ${r + 1}, column ${c + 1}, ${grid[r][c] || 'empty'}${isFading ? ', disappears next' : ''}`);
     }));
 
     $('nameX').textContent = n.X; $('nameO').textContent = n.O;
-    $('nameD').textContent = cfg.grow ? 'Lines added' : 'Draws';
+    $('nameD').textContent = cfg.grow ? 'Lines added' : cfg.fade ? 'Rounds' : 'Draws';
     $('numX').textContent = store.scores.X;
     $('numO').textContent = store.scores.O;
-    $('numD').textContent = cfg.grow ? (store.added || 0) : store.scores.D;
+    $('numD').textContent = cfg.grow ? (store.added || 0) : cfg.fade ? store.round - 1 : store.scores.D;
     $('scoreX').classList.toggle('on', !over && turn === 'X');
     $('scoreO').classList.toggle('on', !over && turn === 'O');
 
@@ -804,7 +909,8 @@
     $('emptyHist').hidden = store.history.length > 0;
     list.innerHTML = store.history.map(h => {
       const time = new Date(h.t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-      const size = cfg.grow && h.size ? `<span class="h-size">${h.size}</span>` : '';
+      const size = cfg.grow && h.size ? `<span class="h-size">${h.size}</span>`
+        : cfg.fade && h.moves ? `<span class="h-size">${h.moves} moves</span>` : '';
       return `<li class="history-item ${h.result === 'O' ? 'o' : ''}"><span class="h-round">Round ${h.round}</span><span><span class="h-res">${resultText(h.result)}</span>${size}</span><span class="h-time">${time}</span></li>`;
     }).join('');
   }
@@ -834,7 +940,7 @@
     }
   });
 
-  /* ---------- Routing (#ai, #pvp, #extreme, anything else = start screen) ---------- */
+  /* ---------- Routing (#ai, #pvp, #extreme, #fading-ai, #fading-pvp; anything else = start screen) ---------- */
   function route() {
     clearTimeout(aiTimer);
     const key = location.hash.slice(1);
