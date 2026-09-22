@@ -111,11 +111,9 @@
   .menu-head p{ margin:0; color:var(--ink-soft); }
 
   .modes{
-    display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:24px;
-    width:min(100%, 1200px);
+    display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:28px;
+    width:min(100%, 1080px);
   }
-  /* center the "coming soon" pair under the four playable modes */
-  .modes-title + .mode.locked{ grid-column:2; }
   .mode{
     background:var(--panel);
     padding:40px 28px 32px;
@@ -127,9 +125,8 @@
   .mode h2{ font-family:var(--font-display); font-weight:500; font-size:1.55rem; margin:0; }
   .mode p{ margin:0 0 10px; color:var(--ink-soft); font-size:.95rem; max-width:32ch; flex:1; }
   .mode .tool{ position:relative; z-index:1; }
-  .modes-title{ grid-column:1 / -1; margin:0; }
-  .modes .modes-title:not(:first-child){ margin-top:28px; }
   .mode.locked .mode-art, .mode.locked h2, .mode.locked p{ opacity:.55; }
+  .tag{ text-transform:uppercase; letter-spacing:.26em; font-size:.62rem; color:var(--blue2); }
 
   /* ---------- Game screen ---------- */
   .game{
@@ -213,20 +210,27 @@
 
   /* Stage: the board sizes itself to the space it has, for any number of rows and columns */
   .stage{
-    display:flex; align-items:center; justify-content:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:48px; min-width:0; min-height:0;
     container-type:size;
   }
   .board-frame{ padding:28px; background:var(--panel); }
   .board{
-    --cols:3; --rows:3; --ratio:1;
+    --cols:3; --rows:3; --ratio:1; --extra:0px;
     position:relative;
-    width:min(calc(100cqw - 56px), calc((100cqh - 56px) * var(--ratio)), calc(780px * var(--ratio)));
+    width:min(calc(100cqw - 56px), calc((100cqh - 56px - var(--extra)) * var(--ratio)), calc(780px * var(--ratio)));
     aspect-ratio:var(--cols) / var(--rows);
     display:grid;
     grid-template-columns:repeat(var(--cols), 1fr);
     grid-template-rows:repeat(var(--rows), 1fr);
   }
+  .picker{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; margin-top:22px; }
+  .picker-label{ text-transform:uppercase; letter-spacing:.26em; font-size:.66rem; color:var(--ink-soft); margin-right:4px; }
+  .tool.pick{ width:auto; display:flex; align-items:center; gap:10px; padding:9px 20px 9px 14px; }
+  .tool.pick svg{ width:24px; height:24px; flex:none; }
+  .tool[aria-pressed="true"]{ --c:var(--ink); border-color:var(--blue); background-color:#18202d; }
+  .picker-keys{ font-size:.78rem; color:var(--ink-soft); width:100%; text-align:center; }
+  @media (hover: none){ .picker-keys{ display:none; } }
   .gl{ position:absolute; pointer-events:none; }
   .gl.v{ top:0; bottom:0; width:5px; transform:translateX(-50%); border-left:1px solid var(--blue); border-right:1px solid var(--blue2); }
   .gl.h{ left:0; right:0; height:5px; transform:translateY(-50%); border-top:1px solid var(--blue); border-bottom:1px solid var(--blue2); }
@@ -259,9 +263,8 @@
   .winline{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; overflow:visible; }
   .winline .draw{ animation-duration:.5s; }
 
-  @media (max-width: 1100px){
+  @media (max-width: 1000px){
     .modes{ grid-template-columns:repeat(2, minmax(0,1fr)); width:min(100%, 760px); }
-    .modes-title + .mode.locked{ grid-column:auto; }
   }
   @media (max-width: 860px){
     .modes{ grid-template-columns:1fr; width:min(100%, 440px); }
@@ -294,8 +297,6 @@
   </header>
 
   <div class="modes">
-    <div class="group-title modes-title">Play now</div>
-
     <section class="mode framed">
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="mode-art" data-cells="x.o.xo..x" aria-hidden="true"></div>
@@ -341,9 +342,7 @@
       </div>
     </section>
 
-    <div class="group-title modes-title">Coming soon</div>
-
-    <section class="mode framed locked">
+    <section class="mode framed">
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="mode-art" aria-hidden="true">
         <svg viewBox="0 0 120 120">
@@ -363,7 +362,10 @@
       </div>
       <h2>Order and Chaos</h2>
       <p>A 6×6 board where Order needs five in a row and Chaos tries to stop it. Both sides can place X or O.</p>
-      <button class="tool" type="button" disabled>Not playable yet</button>
+      <div class="mode-actions">
+        <a class="tool primary" href="#chaos-ai">Play vs AI</a>
+        <a class="tool" href="#chaos-pvp">Play with a friend</a>
+      </div>
     </section>
 
     <section class="mode framed locked">
@@ -391,6 +393,7 @@
       </div>
       <h2>3D</h2>
       <p>Three stacked boards form a cube. Lines can run across layers, straight down or corner to corner.</p>
+      <span class="tag">Coming soon</span>
       <button class="tool" type="button" disabled>Not playable yet</button>
     </section>
   </div>
@@ -412,6 +415,14 @@
         <div class="deco-rule" aria-hidden="true"><i></i><b></b><i></i></div>
         <div class="status-main" id="statusMain">Your turn</div>
         <div class="status-hint" id="statusHint">Pick a square.</div>
+      </div>
+
+      <div id="roleBox" hidden>
+        <div class="group-title">Your role</div>
+        <div class="actions">
+          <button class="tool role" type="button" data-role="order" aria-pressed="true">Order</button>
+          <button class="tool role" type="button" data-role="chaos" aria-pressed="false">Chaos</button>
+        </div>
       </div>
 
       <div>
@@ -442,6 +453,16 @@
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="board" id="board" role="grid" aria-label="Game board"></div>
     </div>
+    <div class="picker" id="picker" hidden>
+      <span class="picker-label">Mark to place</span>
+      <button class="tool pick" type="button" data-mark="X" aria-pressed="true">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M20 20L80 80M80 20L20 80" stroke="var(--ink)" stroke-width="9" fill="none"/></svg>X
+      </button>
+      <button class="tool pick" type="button" data-mark="O" aria-pressed="false">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="32" stroke="var(--blue)" stroke-width="9" fill="none"/><circle cx="50" cy="50" r="18" stroke="var(--blue2)" stroke-width="3" fill="none"/></svg>O
+      </button>
+      <span class="picker-keys">Press X or O on a keyboard to switch.</span>
+    </div>
   </main>
 </div>
 
@@ -454,7 +475,9 @@
     pvp:     { title:'Two players', names:{ X:'Player X', O:'Player O' }, ai:null, grow:false },
     extreme: { title:'Extreme',     names:{ X:'You',      O:'AI' }, ai:'hard', grow:true },
     'fading-ai':  { title:'Fading vs AI',        names:{ X:'You',      O:'AI' },       ai:'fade', fade:true },
-    'fading-pvp': { title:'Fading, two players', names:{ X:'Player X', O:'Player O' }, ai:null,   fade:true }
+    'fading-pvp': { title:'Fading, two players', names:{ X:'Player X', O:'Player O' }, ai:null,   fade:true },
+    'chaos-ai':   { title:'Order and Chaos vs AI',        names:{ X:'You',   O:'AI' },    ai:'oc', oc:true, winLen:5, size:6 },
+    'chaos-pvp':  { title:'Order and Chaos, two players', names:{ X:'Order', O:'Chaos' }, ai:null, oc:true, winLen:5, size:6 }
   };
   const STORAGE_KEY = 'tictactoe-casework-v1';
 
@@ -519,14 +542,23 @@
   let cellEls = [];
   const FADE_LIMIT = 3;
   let marks = { X:[], O:[] }, moveCount = 0;
+  let pickMark = 'X', endReason = '';
+  const pickerEl = $('picker'), roleBox = $('roleBox');
   const winSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   winSvg.setAttribute('class', 'winline');
   winSvg.setAttribute('aria-hidden', 'true');
 
   const names = () => cfg.names;
   const sizeText = (r, c) => `${r}×${c}`;
+  /* Order and Chaos: slot X is always the person (vs AI) or Order (two players) */
+  const humanRole = () => store.humanRole || 'order';
+  const roleOf = slot => !cfg.ai ? (slot === 'X' ? 'order' : 'chaos')
+    : slot === 'X' ? humanRole() : (humanRole() === 'order' ? 'chaos' : 'order');
+  const slotOf = role => roleOf('X') === role ? 'X' : 'O';
+  const cap = w => w[0].toUpperCase() + w.slice(1);
   const resultText = res => {
     if (res === 'D') return 'Draw';
+    if (cfg.oc && !cfg.ai) return (res === 'X' ? 'Order' : 'Chaos') + ' wins';
     if (cfg.ai) return res === 'X' ? 'You win' : 'AI wins';
     return res + ' wins';
   };
@@ -577,9 +609,11 @@
 
   function newRound() {
     clearTimeout(aiTimer);
-    rows = 3; cols = 3;
+    rows = cols = cfg.size || 3;
     grid = Array.from({ length:rows }, () => Array(cols).fill(null));
-    turn = store.starter;
+    turn = cfg.oc ? slotOf('order') : store.starter;
+    pickMark = 'X'; endReason = '';
+    boardEl.style.setProperty('--extra', cfg.oc ? '92px' : '0px');
     over = false;
     notice = '';
     marks = { X:[], O:[] };
@@ -594,10 +628,10 @@
   function onCellClick(r, c) {
     if (over || grid[r][c]) return;
     if (cfg.ai && turn === 'O') return;
-    place(r, c);
+    place(r, c, cfg.oc ? pickMark : turn);
   }
 
-  function place(r, c) {
+  function place(r, c, mark = turn) {
     if (cfg.fade) {
       if (marks[turn].length === FADE_LIMIT) {
         const [or, oc] = marks[turn].shift();
@@ -607,13 +641,19 @@
       marks[turn].push([r, c]);
     }
     moveCount++;
-    grid[r][c] = turn;
+    grid[r][c] = mark;
     cellEls[r][c].classList.remove('fading', 'vanishing');
-    cellEls[r][c].innerHTML = markSVG(turn, true);
+    cellEls[r][c].innerHTML = markSVG(mark, true);
     notice = '';
     const line = winningRun(r, c);
     let delay = 480;
-    if (line) {
+    if (cfg.oc) {
+      // any five of the same mark is a win for Order, whoever placed it
+      if (line) finish(slotOf('order'), line);
+      else if (isFull()) { endReason = 'full'; finish(slotOf('chaos'), null); }
+      else if (!ocAlive(grid.flat())) { endReason = 'blocked'; finish(slotOf('chaos'), null); }
+      else turn = turn === 'X' ? 'O' : 'X';
+    } else if (line) {
       finish(turn, line);
     } else if (isFull()) {
       if (cfg.grow) { grow(); delay = 1100; turn = turn === 'X' ? 'O' : 'X'; }
@@ -648,7 +688,7 @@
           y += dr * s; x += dc * s;
         }
       }
-      if (run.length >= WIN_LEN) return run;
+      if (run.length >= (cfg.winLen || WIN_LEN)) return run;
     }
     return null;
   }
@@ -682,7 +722,8 @@
   function finish(result, line) {
     over = true;
     store.scores[result]++;
-    store.history.unshift({ round:roundNo, result, t:Date.now(), size:sizeText(rows, cols), moves:moveCount });
+    store.history.unshift({ round:roundNo, result, t:Date.now(), size:sizeText(rows, cols), moves:moveCount,
+      role: cfg.oc ? roleOf(result) : undefined, reason: cfg.oc ? (line ? 'five' : endReason) : undefined });
     store.history = store.history.slice(0, 40);
     store.round++;
     store.starter = store.starter === 'X' ? 'O' : 'X';
@@ -845,10 +886,118 @@
     return [Math.floor(pick.i / 3), pick.i % 3];
   }
 
+  /* ---------- Order and Chaos AI (6×6, five in a row) ---------- */
+  const OC_N = 6, OC_LEN = 5;
+  const OC_WINDOWS = [];
+  for (let r = 0; r < OC_N; r++) for (let c = 0; c < OC_N; c++) for (const [dr, dc] of DIRS) {
+    const er = r + dr * (OC_LEN - 1), ec = c + dc * (OC_LEN - 1);
+    if (er < 0 || er >= OC_N || ec < 0 || ec >= OC_N) continue;
+    OC_WINDOWS.push(Array.from({ length:OC_LEN }, (_, k) => (r + dr * k) * OC_N + (c + dc * k)));
+  }
+  const OC_CELLWIN = Array.from({ length:OC_N * OC_N }, () => []);
+  OC_WINDOWS.forEach((w, wi) => w.forEach(i => OC_CELLWIN[i].push(wi)));
+  const OC_VAL = [0.4, 2, 7, 25, 90];
+  const OC_SLIP = 0.08;          // chance of playing one of its top three moves instead of the best
+
+  function ocWindowCounts(g, w) {
+    let x = 0, o = 0;
+    for (const i of w) { if (g[i] === 'X') x++; else if (g[i] === 'O') o++; }
+    return [x, o];
+  }
+  // how promising the board is for Order: open lines of five, weighted by how full they are
+  function ocScore(g) {
+    let s = 0;
+    for (const w of OC_WINDOWS) {
+      const [x, o] = ocWindowCounts(g, w);
+      if (!(x && o)) s += OC_VAL[Math.max(x, o)] || 0;
+    }
+    return s;
+  }
+  const ocAlive = g => OC_WINDOWS.some(w => { const [x, o] = ocWindowCounts(g, w); return !(x && o); });
+  const ocFive = (g, i) => OC_CELLWIN[i].some(wi => OC_WINDOWS[wi].every(j => g[j] === g[i]));
+  // squares where some mark would finish five; "forced" means both marks would, so it can't be blocked
+  function ocThreats(g) {
+    let cells = 0, forced = false;
+    for (let i = 0; i < g.length; i++) {
+      if (g[i]) continue;
+      let cx = false, co = false;
+      for (const wi of OC_CELLWIN[i]) {
+        const [x, o] = ocWindowCounts(g, OC_WINDOWS[wi]);
+        if (x === 4) cx = true; else if (o === 4) co = true;
+      }
+      if (cx || co) cells++;
+      if (cx && co) forced = true;
+    }
+    return { cells, forced };
+  }
+  function ocMoves(g, scoreFn) {
+    const out = [];
+    for (let i = 0; i < g.length; i++) {
+      if (g[i]) continue;
+      for (const m of ['X', 'O']) {
+        g[i] = m;
+        out.push({ i, m, s: scoreFn(g, i) + Math.random() * 0.5 });
+        g[i] = null;
+      }
+    }
+    return out.sort((a, b) => b.s - a.s);
+  }
+  function orderCanWinNext(g) {
+    for (let i = 0; i < g.length; i++) {
+      if (g[i]) continue;
+      for (const m of ['X', 'O']) {
+        g[i] = m;
+        const win = ocFive(g, i) || (() => { const t = ocThreats(g); return t.forced || t.cells >= 2; })();
+        g[i] = null;
+        if (win) return true;
+      }
+    }
+    return false;
+  }
+  function aiPickOC() {
+    const g = grid.flat();
+    const role = roleOf('O');
+    let moves;
+    if (role === 'order') {
+      moves = ocMoves(g, (g, i) => {
+        if (ocFive(g, i)) return 1e9;
+        const t = ocThreats(g);
+        if (t.forced || t.cells >= 2) return 1e8;
+        return ocScore(g) + t.cells * 60;
+      });
+    } else {
+      moves = ocMoves(g, (g, i) => {
+        if (ocFive(g, i)) return -1e9;
+        const t = ocThreats(g);
+        if (t.cells) return -1e8 - t.cells;
+        return -ocScore(g);
+      });
+      // look one move further for the best few: avoid leaving Order a double threat
+      moves.slice(0, 10).forEach(mv => {
+        if (mv.s < -1e7) return;
+        g[mv.i] = mv.m;
+        if (orderCanWinNext(g)) mv.s -= 1e6;
+        g[mv.i] = null;
+      });
+      moves.sort((a, b) => b.s - a.s);
+    }
+    let pick = moves[0];
+    if (Math.abs(pick.s) < 1e5 && Math.random() < OC_SLIP) {
+      const ok = moves.slice(0, 3).filter(mv => Math.abs(mv.s) < 1e5);
+      if (ok.length) pick = ok[Math.floor(Math.random() * ok.length)];
+    }
+    return [Math.floor(pick.i / OC_N), pick.i % OC_N, pick.m];
+  }
+
   function maybeAI(delay) {
     if (!cfg.ai || over || turn !== 'O') return;
     clearTimeout(aiTimer);
     aiTimer = setTimeout(() => {
+      if (cfg.ai === 'oc') {
+        const [r, c, m] = aiPickOC();
+        place(r, c, m);
+        return;
+      }
       const [r, c] = cfg.ai === 'fade' ? aiPickFade() : aiPick(cfg.ai);
       place(r, c);
     }, delay);
@@ -858,13 +1007,15 @@
   function render() {
     const n = names();
     roundLabel.textContent = cfg.grow ? `Round ${roundNo}, board ${sizeText(rows, cols)}`
-      : cfg.fade ? `Round ${roundNo}, move ${over ? moveCount : moveCount + 1}`
+      : (cfg.fade || cfg.oc) ? `Round ${roundNo}, move ${over ? moveCount : moveCount + 1}`
       : `Round ${roundNo}`;
     const fadesNext = cfg.fade && !over && marks[turn].length === FADE_LIMIT;
 
     statusMain.classList.remove('reveal', 'win');
     statusHint.classList.toggle('notice', !!notice);
-    if (over) {
+    if (cfg.oc) {
+      renderOCStatus();
+    } else if (over) {
       const last = store.history[0];
       statusMain.textContent = resultText(last.result);
       if (last.result !== 'D') statusMain.classList.add('win');
@@ -895,12 +1046,20 @@
     }));
 
     $('nameX').textContent = n.X; $('nameO').textContent = n.O;
-    $('nameD').textContent = cfg.grow ? 'Lines added' : cfg.fade ? 'Rounds' : 'Draws';
+    $('nameD').textContent = cfg.grow ? 'Lines added' : (cfg.fade || cfg.oc) ? 'Rounds' : 'Draws';
     $('numX').textContent = store.scores.X;
     $('numO').textContent = store.scores.O;
-    $('numD').textContent = cfg.grow ? (store.added || 0) : cfg.fade ? store.round - 1 : store.scores.D;
+    $('numD').textContent = cfg.grow ? (store.added || 0) : (cfg.fade || cfg.oc) ? store.round - 1 : store.scores.D;
     $('scoreX').classList.toggle('on', !over && turn === 'X');
     $('scoreO').classList.toggle('on', !over && turn === 'O');
+
+    pickerEl.hidden = !cfg.oc;
+    pickerEl.querySelectorAll('.pick').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.mark === pickMark));
+      b.disabled = lockBoard;
+    });
+    roleBox.hidden = !(cfg.oc && cfg.ai);
+    roleBox.querySelectorAll('.role').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.role === humanRole())));
 
     nextBtn.classList.toggle('primary', over);
     nextBtn.textContent = over ? 'Next round' : 'Restart round';
@@ -910,12 +1069,55 @@
     list.innerHTML = store.history.map(h => {
       const time = new Date(h.t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
       const size = cfg.grow && h.size ? `<span class="h-size">${h.size}</span>`
-        : cfg.fade && h.moves ? `<span class="h-size">${h.moves} moves</span>` : '';
+        : cfg.oc && cfg.ai && h.role ? `<span class="h-size">as ${cap(h.role)}</span>`
+        : (cfg.fade || cfg.oc) && h.moves ? `<span class="h-size">${h.moves} moves</span>` : '';
       return `<li class="history-item ${h.result === 'O' ? 'o' : ''}"><span class="h-round">Round ${h.round}</span><span><span class="h-res">${resultText(h.result)}</span>${size}</span><span class="h-time">${time}</span></li>`;
     }).join('');
   }
 
+  function renderOCStatus() {
+    const n = names();
+    if (over) {
+      const last = store.history[0];
+      statusMain.textContent = resultText(last.result);
+      statusMain.classList.add('win');
+      void statusMain.offsetWidth;
+      statusMain.classList.add('reveal');
+      statusHint.textContent = last.reason === 'five' ? `Five in a row after ${last.moves} moves.`
+        : last.reason === 'blocked' ? 'Every line of five is blocked, so Chaos wins early.'
+        : 'The board filled with no five in a row.';
+      return;
+    }
+    const role = roleOf(turn);
+    const goal = role === 'order' ? 'Make five in a row of X or O.' : 'Keep every line from reaching five.';
+    if (cfg.ai) {
+      statusMain.textContent = turn === 'X' ? 'Your turn' : 'AI is thinking';
+      statusHint.textContent = turn === 'X' ? `You are ${cap(role)}. ${goal}` : `The AI plays ${cap(role)}.`;
+    } else {
+      statusMain.textContent = `${cap(role)} to move`;
+      statusHint.textContent = `${goal} Place either mark.`;
+    }
+  }
+
   /* ---------- Controls ---------- */
+  function setPick(m) {
+    pickMark = m;
+    pickerEl.querySelectorAll('.pick').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mark === m)));
+  }
+  pickerEl.querySelectorAll('.pick').forEach(b => b.addEventListener('click', () => setPick(b.dataset.mark)));
+  document.addEventListener('keydown', e => {
+    if (!cfg || !cfg.oc || gameEl.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === 'x') setPick('X');
+    else if (k === 'o') setPick('O');
+  });
+  roleBox.querySelectorAll('.role').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.role === humanRole()) return;
+    store.humanRole = b.dataset.role;
+    persist();
+    newRound();
+  }));
+
   nextBtn.addEventListener('click', newRound);
   $('resetBtn').addEventListener('click', () => {
     stores[mode] = fresh();
@@ -940,7 +1142,7 @@
     }
   });
 
-  /* ---------- Routing (#ai, #pvp, #extreme, #fading-ai, #fading-pvp; anything else = start screen) ---------- */
+  /* ---------- Routing (#ai, #pvp, #extreme, #fading-ai, #fading-pvp, #chaos-ai, #chaos-pvp; anything else = start screen) ---------- */
   function route() {
     clearTimeout(aiTimer);
     const key = location.hash.slice(1);
