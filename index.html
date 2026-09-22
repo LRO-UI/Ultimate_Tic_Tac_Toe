@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Tic tac toe in a grey, black and blue art deco style. Play against the computer, a friend, or the growing Extreme board.">
+<meta name="theme-color" content="#0d0f14">
+<title>Tic Tac Toe</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='7' y='7' width='18' height='18' transform='rotate(45 16 16)' fill='%233f6fa8' stroke='%23e7eaf0' stroke-width='1.5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0f14; --panel:#14171f; --panel-edge:#232732;
+    --blue:#3f6fa8; --blue2:#5c7f9e; --steel:#7c8698;
+    --ink:#e7eaf0; --ink-soft:#727c8c; --line:#252a35;
+    --font-ui:'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-display:'Playfair Display', Georgia, 'Times New Roman', serif;
+
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top, 0px);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+    color-scheme:dark;
+  }
+  *, *::before, *::after{ box-sizing:border-box; }
+  html{ height:100%; scroll-padding-top:env(safe-area-inset-top, 0px); background:var(--bg); }
+  body{
+    margin:0; height:100%;
+    background:var(--bg); color:var(--ink);
+    font-family:var(--font-ui); font-size:16px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  [hidden]{ display:none !important; }
+  :focus-visible{ outline:1px solid var(--ink); outline-offset:3px; }
+
+  /* ---------- Shared motifs ---------- */
+  .framed{ position:relative; }
+  .framed::before, .framed::after{ content:''; position:absolute; pointer-events:none; }
+  .framed::before{ inset:8px;  border:1px solid rgba(231,234,240,.6); }
+  .framed::after{  inset:13px; border:1px solid rgba(92,127,158,.35); }
+
+  .rail-d{
+    position:absolute; width:10px; height:10px; z-index:2; pointer-events:none;
+    background:var(--blue); border:2px solid var(--bg);
+    transform:translate(-50%,-50%) rotate(45deg);
+    box-shadow:0 0 0 1px rgba(231,234,240,.5);
+  }
+  .rail-d.tl{ top:8px; left:8px; }
+  .rail-d.tr{ top:8px; left:calc(100% - 8px); }
+  .rail-d.bl{ top:calc(100% - 8px); left:8px; }
+  .rail-d.br{ top:calc(100% - 8px); left:calc(100% - 8px); }
+
+  .group-title{
+    display:flex; align-items:center; gap:10px;
+    text-transform:uppercase; letter-spacing:.26em; font-size:.66rem;
+    color:var(--ink-soft); margin:0 0 12px;
+  }
+  .group-title::before{
+    content:''; width:6px; height:6px; background:var(--blue);
+    transform:rotate(45deg); flex:none;
+  }
+  .group-title::after{
+    content:''; flex:1; height:3px;
+    border-top:1px solid var(--blue); border-bottom:1px solid var(--blue2);
+  }
+
+  .deco-rule{ display:flex; align-items:center; gap:10px; margin:0 auto; }
+  .deco-rule i{ flex:1; height:3px; border-top:1px solid var(--blue); border-bottom:1px solid var(--blue2); }
+  .deco-rule b{
+    width:8px; height:8px; flex:none; background:var(--blue); transform:rotate(45deg);
+    box-shadow:0 0 0 2px var(--bg), 0 0 0 3px var(--blue2);
+  }
+
+  .tool{
+    --c:var(--blue2);
+    display:block; width:100%; text-align:center; text-decoration:none;
+    border:1px solid var(--line);
+    background:
+      linear-gradient(var(--c),var(--c)) top left/8px 1px no-repeat,
+      linear-gradient(var(--c),var(--c)) top left/1px 8px no-repeat,
+      linear-gradient(var(--c),var(--c)) top right/8px 1px no-repeat,
+      linear-gradient(var(--c),var(--c)) top right/1px 8px no-repeat,
+      linear-gradient(var(--c),var(--c)) bottom left/8px 1px no-repeat,
+      linear-gradient(var(--c),var(--c)) bottom left/1px 8px no-repeat,
+      linear-gradient(var(--c),var(--c)) bottom right/8px 1px no-repeat,
+      linear-gradient(var(--c),var(--c)) bottom right/1px 8px no-repeat,
+      var(--panel);
+    box-shadow:inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--panel-edge);
+    color:var(--ink); font-family:inherit; font-size:.72rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:.14em;
+    padding:13px 12px; cursor:pointer; border-radius:0;
+  }
+  .tool:hover{ --c:#fff; border-color:var(--blue2); }
+  .tool.primary{ --c:var(--ink); border-color:var(--blue); }
+  .tool:disabled{ --c:var(--line); color:var(--ink-soft); cursor:not-allowed; border-color:var(--line); }
+
+  /* ---------- Start screen ---------- */
+  .menu{
+    min-height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:56px 24px;
+  }
+  .menu-head{ text-align:center; margin-bottom:52px; }
+  .menu-head h1{
+    font-family:var(--font-display); font-weight:500;
+    font-size:clamp(2.4rem, 6vw, 4rem); line-height:1.05; letter-spacing:.01em;
+    margin:0 0 20px;
+  }
+  .menu-head .deco-rule{ width:220px; margin-bottom:18px; }
+  .menu-head p{ margin:0; color:var(--ink-soft); }
+
+  .modes{
+    display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:28px;
+    width:min(100%, 1080px);
+  }
+  .mode{
+    background:var(--panel);
+    padding:44px 34px 36px;
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:16px;
+  }
+  .mode-art{ width:min(140px, 60%); aspect-ratio:1; margin-bottom:6px; }
+  .mode-art svg{ width:100%; height:100%; display:block; }
+  .mode h2{ font-family:var(--font-display); font-weight:500; font-size:1.55rem; margin:0; }
+  .mode p{ margin:0 0 10px; color:var(--ink-soft); font-size:.95rem; max-width:32ch; flex:1; }
+  .mode .tool{ position:relative; z-index:1; }
+  .modes-title{ grid-column:1 / -1; margin:0; }
+  .modes .modes-title:not(:first-child){ margin-top:28px; }
+  .mode.locked .mode-art, .mode.locked h2, .mode.locked p{ opacity:.55; }
+
+  /* ---------- Game screen ---------- */
+  .game{
+    height:100%;
+    display:grid;
+    grid-template-columns:minmax(290px, 360px) minmax(0, 1fr);
+    grid-template-rows:minmax(0, 1fr);
+  }
+  .rail{
+    display:flex; flex-direction:column; min-height:0;
+    border-right:1px solid var(--line);
+    background:var(--bg);
+  }
+  .rail-inner{
+    flex:1; overflow-y:auto;
+    padding:34px 32px 36px;
+    display:flex; flex-direction:column; gap:28px;
+  }
+  .rail-head{ padding-bottom:18px; border-bottom:4px double var(--blue2); }
+  .rail-head h1{ font-family:var(--font-display); font-weight:500; font-size:1.5rem; margin:0 0 2px; }
+  .rail-head p{ margin:0; color:var(--ink-soft); font-size:.9rem; }
+
+  .status{
+    position:relative; text-align:center;
+    padding:26px 18px 24px;
+    border:1px solid var(--blue2);
+    background:var(--panel);
+    box-shadow:0 0 0 4px var(--bg), 0 0 0 5px var(--blue),
+               inset 0 0 0 5px var(--panel), inset 0 0 0 6px var(--panel-edge);
+    margin:5px;
+  }
+  .status .wc{
+    position:absolute; width:8px; height:8px; background:var(--blue2);
+    border:2px solid var(--bg); box-sizing:content-box;
+    transform:translate(-50%,-50%) rotate(45deg);
+  }
+  .status .wc.tl{ top:0; left:0; } .status .wc.tr{ top:0; left:100%; }
+  .status .wc.bl{ top:100%; left:0; } .status .wc.br{ top:100%; left:100%; }
+  .status-label{ text-transform:uppercase; letter-spacing:.3em; font-size:.66rem; color:var(--ink-soft); }
+  .status .deco-rule{ width:70%; margin:12px auto 6px; }
+  .status-main{
+    font-family:var(--font-display); font-weight:600;
+    font-size:clamp(1.7rem, 3vw, 2.2rem); line-height:1.2;
+    margin:6px 0 4px; min-height:1.2em;
+  }
+  .status-main.win{ color:#fff; }
+  .status-main.reveal{ animation:pop .45s cubic-bezier(.2,1.5,.4,1); }
+  @keyframes pop{ from{ transform:scale(.9); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .status-hint{ font-size:.85rem; color:var(--ink-soft); min-height:1.3em; }
+  .status-hint.notice{ color:var(--ink); }
+
+  .scores{ display:grid; grid-template-columns:repeat(3, 1fr); border:1px solid var(--line); }
+  .score{ padding:14px 8px 12px; text-align:center; border-bottom:2px solid transparent; }
+  .score + .score{ border-left:1px solid var(--line); }
+  .score.on{ border-bottom-color:var(--blue); background:rgba(63,111,168,.07); }
+  .score-name{
+    text-transform:uppercase; letter-spacing:.18em; font-size:.62rem; color:var(--ink-soft);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .score-num{ font-family:var(--font-display); font-size:2rem; line-height:1.2; font-variant-numeric:lining-nums tabular-nums; }
+  .score.o .score-num{ color:var(--blue2); }
+
+  .actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .actions .wide{ grid-column:1 / -1; }
+
+  .history-list{ list-style:none; margin:0; padding:0; }
+  .history-item{
+    display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+    font-size:.84rem; color:var(--ink-soft);
+    padding:8px 0; border-bottom:3px double var(--line);
+  }
+  .history-item .h-round::before{
+    content:''; display:inline-block; width:5px; height:5px; margin-right:10px;
+    background:var(--blue2); transform:rotate(45deg); vertical-align:middle;
+  }
+  .history-item .h-res{ color:var(--ink); }
+  .history-item.o .h-res{ color:var(--blue2); }
+  .history-item .h-size{ color:var(--ink-soft); margin-left:6px; }
+  .history-item .h-time{ font-variant-numeric:tabular-nums; }
+  .empty-hist{ font-size:.84rem; color:var(--ink-soft); margin:0; }
+
+  /* Stage: the board sizes itself to the space it has, for any number of rows and columns */
+  .stage{
+    display:flex; align-items:center; justify-content:center;
+    padding:48px; min-width:0; min-height:0;
+    container-type:size;
+  }
+  .board-frame{ padding:28px; background:var(--panel); }
+  .board{
+    --cols:3; --rows:3; --ratio:1;
+    position:relative;
+    width:min(calc(100cqw - 56px), calc((100cqh - 56px) * var(--ratio)), calc(780px * var(--ratio)));
+    aspect-ratio:var(--cols) / var(--rows);
+    display:grid;
+    grid-template-columns:repeat(var(--cols), 1fr);
+    grid-template-rows:repeat(var(--rows), 1fr);
+  }
+  .gl{ position:absolute; pointer-events:none; }
+  .gl.v{ top:0; bottom:0; width:5px; transform:translateX(-50%); border-left:1px solid var(--blue); border-right:1px solid var(--blue2); }
+  .gl.h{ left:0; right:0; height:5px; transform:translateY(-50%); border-top:1px solid var(--blue); border-bottom:1px solid var(--blue2); }
+  .gx{
+    position:absolute; width:11px; height:11px; pointer-events:none; z-index:1;
+    background:var(--panel); border:1px solid var(--blue2);
+    transform:translate(-50%,-50%) rotate(45deg);
+  }
+
+  .cell{
+    appearance:none; -webkit-appearance:none;
+    background:transparent; border:0; border-radius:0; margin:0;
+    padding:16%; cursor:pointer; color:inherit; min-width:0; min-height:0;
+  }
+  .cell:hover:not(:disabled){ background:rgba(63,111,168,.07); }
+  .cell:disabled{ cursor:default; }
+  .cell:focus-visible{ outline-offset:-8px; }
+  .cell svg{ width:100%; height:100%; display:block; overflow:visible; transition:opacity .3s ease; }
+  .board.done .cell:not(.hit) svg{ opacity:.28; }
+  .cell.fresh{ animation:fresh 1.4s ease-out; }
+  @keyframes fresh{ 0%, 25%{ background:rgba(63,111,168,.32); } 100%{ background:transparent; } }
+
+  .draw{ stroke-dasharray:1; stroke-dashoffset:1; animation:draw .32s ease-out forwards; }
+  .draw.d2{ animation-delay:.12s; }
+  @keyframes draw{ to{ stroke-dashoffset:0; } }
+
+  .winline{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; overflow:visible; }
+  .winline .draw{ animation-duration:.5s; }
+
+  @media (max-width: 860px){
+    .modes{ grid-template-columns:1fr; width:min(100%, 440px); }
+    .game{ grid-template-columns:1fr; grid-template-rows:auto auto; height:auto; min-height:100%; }
+    .stage{ order:-1; padding:24px 16px 28px; container-type:inline-size; }
+    .board-frame{ padding:22px; }
+    .board{
+      width:min(calc(100cqw - 44px), calc(70vh * var(--ratio)));
+      width:min(calc(100cqw - 44px), calc(70dvh * var(--ratio)));
+    }
+    .rail{ border-right:0; border-top:4px double var(--blue2); }
+    .rail-inner{ overflow:visible; padding:28px 22px 36px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .draw{ animation:none; stroke-dashoffset:0; }
+    .status-main.reveal, .cell.fresh{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ Start screen ============ -->
+<main class="menu" id="menu">
+  <header class="menu-head">
+    <h1>Tic Tac Toe</h1>
+    <div class="deco-rule" aria-hidden="true"><i></i><b></b><i></i></div>
+    <p>Pick how you want to play.</p>
+  </header>
+
+  <div class="modes">
+    <div class="group-title modes-title">Play now</div>
+
+    <section class="mode framed">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="mode-art" data-cells="x.o.xo..x" aria-hidden="true"></div>
+      <h2>Versus AI</h2>
+      <p>You play X against the computer. It blocks most of your wins, but not all of them.</p>
+      <a class="tool primary" href="#ai">Play vs AI</a>
+    </section>
+
+    <section class="mode framed">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="mode-art" data-cells="o.x.xoxo." aria-hidden="true"></div>
+      <h2>Two players</h2>
+      <p>Pass the device back and forth. Scores and history are kept for both of you.</p>
+      <a class="tool primary" href="#pvp">Play with a friend</a>
+    </section>
+
+    <section class="mode framed">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="mode-art" data-cells="xoxxooxxo" data-extreme="1" aria-hidden="true"></div>
+      <h2>Extreme</h2>
+      <p>You against a sharper AI. Every draw adds a new row or column on a random side, until someone gets three in a row.</p>
+      <a class="tool primary" href="#extreme">Play Extreme</a>
+    </section>
+
+    <div class="group-title modes-title">Coming soon</div>
+
+    <section class="mode framed locked">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="mode-art" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <path d="M39 3V117M41 3V117M79 3V117M81 3V117" stroke="var(--blue)" stroke-width="1" fill="none"/>
+          <path d="M3 39H117M3 41H117M3 79H117M3 81H117" stroke="var(--blue2)" stroke-width="1" fill="none"/>
+          <path d="M11 11L29 29M29 11L11 29" stroke="var(--ink)" stroke-width="2.2" opacity=".25"/>
+          <path d="M91 11L109 29M109 11L91 29" stroke="var(--ink)" stroke-width="2.2" opacity=".6"/>
+          <path d="M51 51L69 69M69 51L51 69" stroke="var(--ink)" stroke-width="2.2"/>
+          <circle cx="60" cy="20" r="10.5" stroke="var(--blue)" stroke-width="2.2" fill="none"/><circle cx="60" cy="20" r="6.5" stroke="var(--blue2)" stroke-width="1" fill="none"/>
+          <circle cx="20" cy="100" r="10.5" stroke="var(--blue)" stroke-width="2.2" fill="none"/><circle cx="20" cy="100" r="6.5" stroke="var(--blue2)" stroke-width="1" fill="none"/>
+        </svg>
+      </div>
+      <h2>Fading</h2>
+      <p>Each player keeps only three marks. Place a fourth and your oldest one disappears, so the game never ends in a draw.</p>
+      <button class="tool" type="button" disabled>Not playable yet</button>
+    </section>
+
+    <section class="mode framed locked">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="mode-art" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <path d="M20 2V118M40 2V118M60 2V118M80 2V118M100 2V118" stroke="var(--blue)" stroke-width="1" fill="none"/>
+          <path d="M2 20H118M2 40H118M2 60H118M2 80H118M2 100H118" stroke="var(--blue2)" stroke-width="1" fill="none"/>
+          <g stroke="var(--ink)" stroke-width="1.8">
+            <path d="M25 25L35 35M35 25L25 35"/><path d="M45 45L55 55M55 45L45 55"/>
+            <path d="M65 65L75 75M75 65L65 75"/><path d="M85 85L95 95M95 85L85 95"/>
+            <path d="M5 65L15 75M15 65L5 75"/><path d="M85 5L95 15M95 5L85 15"/>
+          </g>
+          <g stroke="var(--blue)" stroke-width="1.8" fill="none">
+            <circle cx="110" cy="110" r="6"/><circle cx="70" cy="30" r="6"/>
+            <circle cx="30" cy="90" r="6"/><circle cx="110" cy="50" r="6"/><circle cx="10" cy="10" r="6"/>
+          </g>
+          <rect x="104" y="104" width="12" height="12" transform="rotate(45 110 110)" fill="none" stroke="var(--steel)" stroke-width="1" stroke-dasharray="2 2"/>
+        </svg>
+      </div>
+      <h2>Order and Chaos</h2>
+      <p>A 6×6 board where Order needs five in a row and Chaos tries to stop it. Both sides can place X or O.</p>
+      <button class="tool" type="button" disabled>Not playable yet</button>
+    </section>
+
+    <section class="mode framed locked">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="mode-art" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <defs>
+            <g id="layer3d">
+              <path d="M6 0H78L114 28H42Z" fill="var(--panel)" stroke="var(--blue2)" stroke-width="1"/>
+              <path d="M30 0L66 28M54 0L90 28M18 9.33H90M30 18.67H102" stroke="var(--blue)" stroke-width="1" fill="none"/>
+            </g>
+          </defs>
+          <use href="#layer3d" y="6"/>
+          <use href="#layer3d" y="46"/>
+          <use href="#layer3d" y="86"/>
+          <path d="M60 20V100" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+          <g stroke="var(--blue)" stroke-width="2" fill="none">
+            <ellipse cx="60" cy="20" rx="9" ry="4"/>
+            <ellipse cx="60" cy="60" rx="9" ry="4"/>
+            <ellipse cx="60" cy="100" rx="9" ry="4"/>
+          </g>
+          <path d="M19 8.5L29 12.8M29 8.5L19 12.8" stroke="var(--ink)" stroke-width="1.8"/>
+          <path d="M91 107L101 111.3M101 107L91 111.3" stroke="var(--ink)" stroke-width="1.8"/>
+        </svg>
+      </div>
+      <h2>3D</h2>
+      <p>Three stacked boards form a cube. Lines can run across layers, straight down or corner to corner.</p>
+      <button class="tool" type="button" disabled>Not playable yet</button>
+    </section>
+  </div>
+</main>
+
+<!-- ============ Game screen ============ -->
+<div class="game" id="game" hidden>
+  <aside class="rail framed" aria-label="Scores and history">
+    <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+    <div class="rail-inner">
+      <div class="rail-head">
+        <h1>Tic Tac Toe</h1>
+        <p id="modeName">Versus AI</p>
+      </div>
+
+      <div class="status" aria-live="polite">
+        <i class="wc tl"></i><i class="wc tr"></i><i class="wc bl"></i><i class="wc br"></i>
+        <div class="status-label" id="roundLabel">Round 1</div>
+        <div class="deco-rule" aria-hidden="true"><i></i><b></b><i></i></div>
+        <div class="status-main" id="statusMain">Your turn</div>
+        <div class="status-hint" id="statusHint">Pick a square.</div>
+      </div>
+
+      <div>
+        <div class="group-title">Winners</div>
+        <div class="scores">
+          <div class="score x" id="scoreX"><div class="score-name" id="nameX">You</div><div class="score-num" id="numX">0</div></div>
+          <div class="score d"><div class="score-name" id="nameD">Draws</div><div class="score-num" id="numD">0</div></div>
+          <div class="score o" id="scoreO"><div class="score-name" id="nameO">AI</div><div class="score-num" id="numO">0</div></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="tool" type="button" id="nextBtn">Restart round</button>
+        <button class="tool" type="button" id="resetBtn">Reset scores</button>
+        <a class="tool wide" href="#">Change mode</a>
+      </div>
+
+      <div>
+        <div class="group-title">History</div>
+        <ul class="history-list" id="historyList"></ul>
+        <p class="empty-hist" id="emptyHist">Finished rounds will show up here.</p>
+      </div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="board-frame framed">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="board" id="board" role="grid" aria-label="Game board"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const WIN_LEN = 3;
+  const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
+  const MODES = {
+    ai:      { title:'Versus AI',   names:{ X:'You',      O:'AI' }, ai:'easy', grow:false },
+    pvp:     { title:'Two players', names:{ X:'Player X', O:'Player O' }, ai:null, grow:false },
+    extreme: { title:'Extreme',     names:{ X:'You',      O:'AI' }, ai:'hard', grow:true }
+  };
+  const STORAGE_KEY = 'tictactoe-casework-v1';
+
+  /* ---------- Persistence (safe if storage is blocked) ---------- */
+  const fresh = () => ({ scores:{ X:0, O:0, D:0 }, history:[], round:1, starter:'X' });
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { saved = {}; }
+  const stores = {};
+  Object.keys(MODES).forEach(k => { stores[k] = Object.assign(fresh(), saved[k] || {}); });
+  const persist = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stores)); } catch (e) {} };
+
+  /* ---------- Elements ---------- */
+  const $ = id => document.getElementById(id);
+  const menuEl = $('menu'), gameEl = $('game'), boardEl = $('board');
+  const statusMain = $('statusMain'), statusHint = $('statusHint'), roundLabel = $('roundLabel');
+  const nextBtn = $('nextBtn');
+
+  /* ---------- Marks ---------- */
+  const markSVG = (p, animate) => {
+    const d = animate ? 'draw' : '';
+    if (p === 'X') return `<svg viewBox="0 0 100 100" aria-hidden="true">
+      <path class="${d}" pathLength="1" d="M20 20L80 80" stroke="var(--ink)" stroke-width="6" fill="none"/>
+      <path class="${d} d2" pathLength="1" d="M80 20L20 80" stroke="var(--ink)" stroke-width="6" fill="none"/>
+      <rect x="45" y="45" width="10" height="10" transform="rotate(45 50 50)" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>
+    </svg>`;
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="${d}" pathLength="1" cx="50" cy="50" r="30" transform="rotate(-90 50 50)" stroke="var(--blue)" stroke-width="6" fill="none"/>
+      <circle class="${d} d2" pathLength="1" cx="50" cy="50" r="20" transform="rotate(-90 50 50)" stroke="var(--blue2)" stroke-width="1.5" fill="none"/>
+    </svg>`;
+  };
+
+  /* ---------- Start screen art ---------- */
+  document.querySelectorAll('.mode-art').forEach(el => {
+    const ext = !!el.dataset.extreme;
+    const s = ext ? 30 : 40;                 // cell size inside a 120 viewBox
+    const off = ext ? 0 : 0;
+    const n = 3 * s;
+    let svg = `<svg viewBox="0 0 120 120"><g transform="translate(${off} ${ext ? 15 : 0})">`;
+    for (let k = 1; k < 3; k++) {
+      const p = k * s;
+      svg += `<path d="M${p-1} 3V${n-3}M${p+1} 3V${n-3}" stroke="var(--blue)" stroke-width="1" fill="none"/>`;
+      svg += `<path d="M3 ${p-1}H${n-3}M3 ${p+1}H${n-3}" stroke="var(--blue2)" stroke-width="1" fill="none"/>`;
+    }
+    const r = s * 0.24;
+    [...el.dataset.cells].forEach((c, i) => {
+      const cx = (i % 3) * s + s / 2, cy = Math.floor(i / 3) * s + s / 2;
+      if (c === 'x') svg += `<path d="M${cx-r} ${cy-r}L${cx+r} ${cy+r}M${cx+r} ${cy-r}L${cx-r} ${cy+r}" stroke="var(--ink)" stroke-width="2.2"/>`;
+      if (c === 'o') svg += `<circle cx="${cx}" cy="${cy}" r="${r*1.1}" stroke="var(--blue)" stroke-width="2.2" fill="none"/><circle cx="${cx}" cy="${cy}" r="${r*0.65}" stroke="var(--blue2)" stroke-width="1" fill="none"/>`;
+    });
+    if (ext) {
+      // the new column appearing to the right of a drawn board
+      svg += `<path d="M${n-1} 3V${n-3}M${n+1} 3V${n-3}" stroke="var(--steel)" stroke-width="1" stroke-dasharray="3 3" fill="none"/>`;
+      svg += `<path d="M${n+3} ${s-1}H${n+s-3}M${n+3} ${s+1}H${n+s-3}M${n+3} ${2*s-1}H${n+s-3}M${n+3} ${2*s+1}H${n+s-3}" stroke="var(--steel)" stroke-width="1" stroke-dasharray="3 3" fill="none"/>`;
+      svg += `<rect x="${n+s/2-5}" y="${n/2-5}" width="10" height="10" transform="rotate(45 ${n+s/2} ${n/2})" fill="var(--blue)" stroke="var(--ink)" stroke-width="1"/>`;
+    }
+    el.innerHTML = svg + '</g></svg>';
+  });
+
+  /* ---------- Game state ---------- */
+  let mode = null, store = null, cfg = null;
+  let grid, rows, cols, turn, over, roundNo, notice = '', aiTimer = null;
+  let cellEls = [];
+  const winSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  winSvg.setAttribute('class', 'winline');
+  winSvg.setAttribute('aria-hidden', 'true');
+
+  const names = () => cfg.names;
+  const sizeText = (r, c) => `${r}×${c}`;
+  const resultText = res => {
+    if (res === 'D') return 'Draw';
+    if (cfg.ai) return res === 'X' ? 'You win' : 'AI wins';
+    return res + ' wins';
+  };
+
+  /* Build (or rebuild) the board DOM for the current grid size */
+  function buildBoard(freshCells) {
+    boardEl.innerHTML = '';
+    boardEl.style.setProperty('--cols', cols);
+    boardEl.style.setProperty('--rows', rows);
+    boardEl.style.setProperty('--ratio', cols / rows);
+
+    for (let k = 1; k < cols; k++) {
+      const v = document.createElement('div');
+      v.className = 'gl v'; v.style.left = (k / cols * 100) + '%';
+      boardEl.appendChild(v);
+    }
+    for (let k = 1; k < rows; k++) {
+      const h = document.createElement('div');
+      h.className = 'gl h'; h.style.top = (k / rows * 100) + '%';
+      boardEl.appendChild(h);
+    }
+    for (let a = 1; a < rows; a++) for (let b = 1; b < cols; b++) {
+      const d = document.createElement('i');
+      d.className = 'gx'; d.style.top = (a / rows * 100) + '%'; d.style.left = (b / cols * 100) + '%';
+      boardEl.appendChild(d);
+    }
+
+    cellEls = [];
+    for (let r = 0; r < rows; r++) {
+      const rowEls = [];
+      for (let c = 0; c < cols; c++) {
+        const b = document.createElement('button');
+        b.className = 'cell'; b.type = 'button';
+        b.dataset.r = r; b.dataset.c = c;
+        b.setAttribute('role', 'gridcell');
+        if (grid[r][c]) b.innerHTML = markSVG(grid[r][c], false);
+        if (freshCells && freshCells.some(([fr, fc]) => fr === r && fc === c)) b.classList.add('fresh');
+        b.addEventListener('click', () => onCellClick(r, c));
+        boardEl.appendChild(b);
+        rowEls.push(b);
+      }
+      cellEls.push(rowEls);
+    }
+    winSvg.setAttribute('viewBox', `0 0 ${cols * 100} ${rows * 100}`);
+    winSvg.innerHTML = '';
+    boardEl.appendChild(winSvg);
+  }
+
+  function newRound() {
+    clearTimeout(aiTimer);
+    rows = 3; cols = 3;
+    grid = Array.from({ length:rows }, () => Array(cols).fill(null));
+    turn = store.starter;
+    over = false;
+    notice = '';
+    roundNo = store.round;
+    boardEl.classList.remove('done');
+    buildBoard();
+    render();
+    maybeAI(500);
+  }
+
+  function onCellClick(r, c) {
+    if (over || grid[r][c]) return;
+    if (cfg.ai && turn === 'O') return;
+    place(r, c);
+  }
+
+  function place(r, c) {
+    grid[r][c] = turn;
+    cellEls[r][c].innerHTML = markSVG(turn, true);
+    notice = '';
+    const line = winningRun(r, c);
+    let delay = 480;
+    if (line) {
+      finish(turn, line);
+    } else if (isFull()) {
+      if (cfg.grow) { grow(); delay = 1100; turn = turn === 'X' ? 'O' : 'X'; }
+      else finish('D', null);
+    } else {
+      turn = turn === 'X' ? 'O' : 'X';
+    }
+    render();
+    maybeAI(delay);
+  }
+
+  /* Longest same-mark run through (r, c); returns cells if it reaches WIN_LEN */
+  function winningRun(r, c, g = grid) {
+    const p = g[r][c];
+    for (const [dr, dc] of DIRS) {
+      const run = [[r, c]];
+      for (const s of [1, -1]) {
+        let y = r + dr * s, x = c + dc * s;
+        while (y >= 0 && y < g.length && x >= 0 && x < g[0].length && g[y][x] === p) {
+          s === 1 ? run.push([y, x]) : run.unshift([y, x]);
+          y += dr * s; x += dc * s;
+        }
+      }
+      if (run.length >= WIN_LEN) return run;
+    }
+    return null;
+  }
+
+  const isFull = () => grid.every(row => row.every(Boolean));
+
+  /* Extreme: add an empty row or column on a random side */
+  function grow() {
+    const side = ['top', 'bottom', 'left', 'right'][Math.floor(Math.random() * 4)];
+    const added = [];
+    if (side === 'top' || side === 'bottom') {
+      const row = Array(cols).fill(null);
+      side === 'top' ? grid.unshift(row) : grid.push(row);
+      rows++;
+      const r = side === 'top' ? 0 : rows - 1;
+      for (let c = 0; c < cols; c++) added.push([r, c]);
+    } else {
+      grid.forEach(row => side === 'left' ? row.unshift(null) : row.push(null));
+      cols++;
+      const c = side === 'left' ? 0 : cols - 1;
+      for (let r = 0; r < rows; r++) added.push([r, c]);
+    }
+    const kind = (side === 'top' || side === 'bottom') ? 'row' : 'column';
+    const where = (side === 'top' || side === 'bottom') ? `at the ${side}` : `on the ${side}`;
+    notice = `Draw. A new ${kind} was added ${where}.`;
+    store.added = (store.added || 0) + 1;
+    persist();
+    buildBoard(added);
+  }
+
+  function finish(result, line) {
+    over = true;
+    store.scores[result]++;
+    store.history.unshift({ round:roundNo, result, t:Date.now(), size:sizeText(rows, cols) });
+    store.history = store.history.slice(0, 40);
+    store.round++;
+    store.starter = store.starter === 'X' ? 'O' : 'X';
+    persist();
+    boardEl.classList.add('done');
+    if (line) {
+      line.forEach(([r, c]) => cellEls[r][c].classList.add('hit'));
+      drawWinLine(line);
+    }
+  }
+
+  function drawWinLine(line) {
+    const pt = ([r, c]) => [c * 100 + 50, r * 100 + 50];
+    let [x1, y1] = pt(line[0]), [x2, y2] = pt(line[line.length - 1]);
+    const len = Math.hypot(x2 - x1, y2 - y1), ex = (x2 - x1) / len * 34, ey = (y2 - y1) / len * 34;
+    x1 -= ex; y1 -= ey; x2 += ex; y2 += ey;
+    const ln = (stroke, w) => `<line class="draw" pathLength="1" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${w}"/>`;
+    const dm = (x, y) => `<rect x="${x-5}" y="${y-5}" width="10" height="10" transform="rotate(45 ${x} ${y})" fill="var(--blue)" stroke="var(--ink)" stroke-width="1.5"/>`;
+    winSvg.innerHTML = ln('var(--blue)', 8) + ln('var(--ink)', 1.5) + dm(x1, y1) + dm(x2, y2);
+  }
+
+  /* ---------- AI ---------- */
+  const emptyCells = () => {
+    const out = [];
+    grid.forEach((row, r) => row.forEach((v, c) => { if (!v) out.push([r, c]); }));
+    return out;
+  };
+  const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  // Cells where player p would win right now
+  function winningMoves(p) {
+    return emptyCells().filter(([r, c]) => {
+      grid[r][c] = p;
+      const w = !!winningRun(r, c);
+      grid[r][c] = null;
+      return w;
+    });
+  }
+
+  // Positional score: how many open lines of 3 pass through the cell, and how far along they are
+  function heuristic(r, c) {
+    let score = 0;
+    for (const [dr, dc] of DIRS) {
+      for (let start = -(WIN_LEN - 1); start <= 0; start++) {
+        let mine = 0, theirs = 0, ok = true;
+        for (let k = 0; k < WIN_LEN; k++) {
+          const y = r + dr * (start + k), x = c + dc * (start + k);
+          if (y < 0 || y >= rows || x < 0 || x >= cols) { ok = false; break; }
+          if (grid[y][x] === 'O') mine++; else if (grid[y][x] === 'X') theirs++;
+        }
+        if (!ok) continue;
+        if (!theirs) score += [1, 6, 50][mine];
+        if (!mine) score += [1, 5, 40][theirs];
+      }
+    }
+    return score;
+  }
+
+  // Threats created: number of immediate wins p would have after playing (r, c)
+  function threatsAfter(p, r, c) {
+    grid[r][c] = p;
+    const n = winningMoves(p).length;
+    grid[r][c] = null;
+    return n;
+  }
+
+  function bestByHeuristic(cands) {
+    let best = -1, picks = [];
+    cands.forEach(([r, c]) => {
+      const s = heuristic(r, c) + Math.random() * 0.5;
+      if (s > best) { best = s; picks = [[r, c]]; }
+    });
+    return picks[0];
+  }
+
+  function aiPick(level) {
+    const empty = emptyCells();
+    const win = winningMoves('O'); if (win.length) return rand(win);
+    const block = winningMoves('X');
+
+    if (level === 'easy') {
+      if (block.length && Math.random() > 0.15) return rand(block);
+      if (Math.random() < 0.3) return rand(empty);
+      return bestByHeuristic(empty);
+    }
+
+    // hard
+    if (block.length) return block.length > 1 ? bestByHeuristic(block) : block[0];
+    const forks = empty.filter(([r, c]) => threatsAfter('O', r, c) >= 2);
+    if (forks.length) return bestByHeuristic(forks);
+    const theirForks = empty.filter(([r, c]) => threatsAfter('X', r, c) >= 2);
+    if (theirForks.length === 1) return theirForks[0];
+    if (theirForks.length > 1) {
+      // force a reply with a threat of our own that doesn't set up their fork
+      const forcing = empty.filter(([r, c]) => {
+        if (threatsAfter('O', r, c) < 1) return false;
+        grid[r][c] = 'O';
+        const reply = winningMoves('O')[0];
+        const bad = reply && threatsAfter('X', reply[0], reply[1]) >= 2;
+        grid[r][c] = null;
+        return !bad;
+      });
+      if (forcing.length) return bestByHeuristic(forcing);
+      return bestByHeuristic(theirForks);
+    }
+    return bestByHeuristic(empty);
+  }
+
+  function maybeAI(delay) {
+    if (!cfg.ai || over || turn !== 'O') return;
+    clearTimeout(aiTimer);
+    aiTimer = setTimeout(() => {
+      const [r, c] = aiPick(cfg.ai);
+      place(r, c);
+    }, delay);
+  }
+
+  /* ---------- Rendering ---------- */
+  function render() {
+    const n = names();
+    roundLabel.textContent = cfg.grow ? `Round ${roundNo}, board ${sizeText(rows, cols)}` : `Round ${roundNo}`;
+
+    statusMain.classList.remove('reveal', 'win');
+    statusHint.classList.toggle('notice', !!notice);
+    if (over) {
+      const last = store.history[0];
+      statusMain.textContent = resultText(last.result);
+      if (last.result !== 'D') statusMain.classList.add('win');
+      void statusMain.offsetWidth;
+      statusMain.classList.add('reveal');
+      statusHint.textContent = last.result === 'D'
+        ? 'Nobody got three in a row.'
+        : (cfg.grow ? `Won on a ${last.size} board.` : 'Start a new round when you are ready.');
+    } else if (cfg.ai) {
+      statusMain.textContent = turn === 'X' ? 'Your turn' : 'AI is thinking';
+      statusHint.textContent = notice || (turn === 'X' ? 'You play X. Get three in a row.' : 'The AI plays O.');
+    } else {
+      statusMain.textContent = turn + ' to move';
+      statusHint.textContent = n[turn] + ', pick a square.';
+    }
+
+    const lockBoard = over || (cfg.ai && turn === 'O');
+    cellEls.forEach((rowEls, r) => rowEls.forEach((el, c) => {
+      el.disabled = lockBoard || !!grid[r][c];
+      el.setAttribute('aria-label', `Row ${r + 1}, column ${c + 1}, ${grid[r][c] || 'empty'}`);
+    }));
+
+    $('nameX').textContent = n.X; $('nameO').textContent = n.O;
+    $('nameD').textContent = cfg.grow ? 'Lines added' : 'Draws';
+    $('numX').textContent = store.scores.X;
+    $('numO').textContent = store.scores.O;
+    $('numD').textContent = cfg.grow ? (store.added || 0) : store.scores.D;
+    $('scoreX').classList.toggle('on', !over && turn === 'X');
+    $('scoreO').classList.toggle('on', !over && turn === 'O');
+
+    nextBtn.classList.toggle('primary', over);
+    nextBtn.textContent = over ? 'Next round' : 'Restart round';
+
+    const list = $('historyList');
+    $('emptyHist').hidden = store.history.length > 0;
+    list.innerHTML = store.history.map(h => {
+      const time = new Date(h.t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      const size = cfg.grow && h.size ? `<span class="h-size">${h.size}</span>` : '';
+      return `<li class="history-item ${h.result === 'O' ? 'o' : ''}"><span class="h-round">Round ${h.round}</span><span><span class="h-res">${resultText(h.result)}</span>${size}</span><span class="h-time">${time}</span></li>`;
+    }).join('');
+  }
+
+  /* ---------- Controls ---------- */
+  nextBtn.addEventListener('click', newRound);
+  $('resetBtn').addEventListener('click', () => {
+    stores[mode] = fresh();
+    store = stores[mode];
+    persist();
+    newRound();
+  });
+
+  boardEl.addEventListener('keydown', e => {
+    const el = document.activeElement;
+    if (!el || !el.classList.contains('cell')) return;
+    const moves = { ArrowLeft:[0,-1], ArrowRight:[0,1], ArrowUp:[-1,0], ArrowDown:[1,0] };
+    if (!(e.key in moves)) return;
+    e.preventDefault();
+    let r = +el.dataset.r, c = +el.dataset.c;
+    const [dr, dc] = moves[e.key];
+    // skip over filled squares to the next open one in that direction
+    while (true) {
+      r += dr; c += dc;
+      if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+      if (!cellEls[r][c].disabled) { cellEls[r][c].focus(); return; }
+    }
+  });
+
+  /* ---------- Routing (#ai, #pvp, #extreme, anything else = start screen) ---------- */
+  function route() {
+    clearTimeout(aiTimer);
+    const key = location.hash.slice(1);
+    if (MODES[key]) {
+      mode = key;
+      cfg = MODES[mode];
+      store = stores[mode];
+      $('modeName').textContent = cfg.title;
+      document.title = 'Tic Tac Toe | ' + cfg.title;
+      menuEl.hidden = true;
+      gameEl.hidden = false;
+      newRound();
+    } else {
+      mode = null;
+      document.title = 'Tic Tac Toe';
+      gameEl.hidden = true;
+      menuEl.hidden = false;
+    }
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>
