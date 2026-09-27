@@ -111,8 +111,8 @@
   .menu-head p{ margin:0; color:var(--ink-soft); }
 
   .modes{
-    display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:28px;
-    width:min(100%, 1080px);
+    display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:24px;
+    width:min(100%, 1200px);
   }
   .mode{
     background:var(--panel);
@@ -263,7 +263,7 @@
   .winline{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; overflow:visible; }
   .winline .draw{ animation-duration:.5s; }
 
-  @media (max-width: 1000px){
+  @media (max-width: 1100px){
     .modes{ grid-template-columns:repeat(2, minmax(0,1fr)); width:min(100%, 760px); }
   }
   @media (max-width: 860px){
@@ -278,6 +278,84 @@
     .rail{ border-right:0; border-top:4px double var(--blue2); }
     .rail-inner{ overflow:visible; padding:28px 22px 36px; }
   }
+
+
+  /* ---------- 3D cube: three stacked layers ---------- */
+  .cube{
+    --s:min(calc((100cqw - 110px) / 1.15), calc((100cqh - 250px) / 2.1), 420px);
+    position:relative; display:flex; flex-direction:column; align-items:center;
+    padding:0 7%;
+  }
+  .cube.flat{
+    flex-direction:row; align-items:flex-start; gap:30px; padding:0;
+    --s:min(calc((100cqw - 140px) / 3), calc(100cqh - 200px), 320px);
+  }
+  .layer-wrap{ display:flex; flex-direction:column; align-items:center; }
+  .layer-name{
+    font-size:.72rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft);
+    height:22px; line-height:22px; position:relative; z-index:2;
+  }
+  .layer-name b{ color:var(--blue2); font-weight:600; margin-right:8px; }
+  .cube:not(.flat) .layer-slot{ height:calc(var(--s) * .7); display:flex; align-items:center; justify-content:center; }
+  .layer{
+    position:relative; flex:none; width:var(--s); height:var(--s);
+    display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr);
+    background:#171b24; border:1px solid var(--blue2);
+    box-shadow:0 0 0 4px var(--panel), 0 0 0 5px var(--panel-edge);
+    transition:transform .5s cubic-bezier(.2,.8,.2,1);
+  }
+  .cube:not(.flat) .layer{ transform:perspective(1500px) rotateX(52deg); }
+  .cube.flat .layer{ transform:none; }
+  .cube .cell{ padding:18%; position:relative; z-index:1; }
+  .cube .cell.echo{ background:rgba(92,127,158,.14); box-shadow:inset 0 0 0 1px rgba(92,127,158,.45); }
+  .cube .cell.echo.self{ background:rgba(63,111,168,.2); }
+  .cube.done .cell:not(.hit) svg{ opacity:.28; }
+  .cube .winline{ z-index:5; }
+  .cdot{ position:absolute; left:50%; top:50%; width:1px; height:1px; pointer-events:none; }
+  .tool.pick.plain{ padding:9px 18px; }
+
+  @media (max-width: 860px){
+    .cube{ --s:min(calc((100cqw - 110px) / 1.15), 380px); }
+    .cube.flat{ flex-direction:column; align-items:center; gap:18px; --s:min(calc(100cqw - 100px), 300px); }
+  }
+  @media (prefers-reduced-motion: reduce){ .layer{ transition:none; } }
+
+  /* ---------- Ultimate: nine small boards inside one big one ---------- */
+  .ult{
+    --u:min(calc(100cqw - 56px), calc(100cqh - 56px - 20px), 760px);
+    position:relative; width:var(--u); aspect-ratio:1;
+    display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr);
+  }
+  .ult > .gl.v{ width:7px; }
+  .ult > .gl.h{ height:7px; }
+  .ub{ position:relative; padding:5.5%; min-width:0; min-height:0; }
+  .ub-inner{
+    position:relative; width:100%; height:100%;
+    display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(3, 1fr);
+    transition:background-color .25s ease, box-shadow .25s ease;
+  }
+  .ub .gl.v{ width:1px; border-right:0; border-left:1px solid rgba(92,127,158,.5); }
+  .ub .gl.h{ height:1px; border-bottom:0; border-top:1px solid rgba(92,127,158,.5); }
+  .ub.active .ub-inner{
+    background:rgba(63,111,168,.14);
+    box-shadow:0 0 0 7px rgba(63,111,168,.14), 0 0 0 8px var(--blue);
+  }
+  .ub.won .cell svg, .ub.drawn .cell svg{ opacity:.2; }
+  .ub.drawn .ub-inner{ background:repeating-linear-gradient(135deg, transparent 0 9px, rgba(114,124,140,.07) 9px 10px); }
+  .ub-mark{ position:absolute; inset:5.5%; padding:9%; pointer-events:none; z-index:2; }
+  .ub-mark svg{ width:100%; height:100%; display:block; overflow:visible; }
+  .ult .cell{ padding:15%; }
+  .ult .cell.last{ box-shadow:inset 0 0 0 1px var(--steel); }
+  .ult.done .ub:not(.hit) .ub-mark{ opacity:.3; }
+  .ult.done .ub-inner{ box-shadow:none; background:transparent; }
+  .ult-note{ font-size:.82rem; color:var(--ink-soft); text-align:center; margin:18px 0 0; max-width:60ch; }
+
+  @media (max-width: 860px){
+    .ult{ --u:min(calc(100cqw - 44px), 640px); }
+    .ub{ padding:4.5%; }
+    .ub-mark{ inset:4.5%; }
+  }
+
 
   @media (prefers-reduced-motion: reduce){
     .draw{ animation:none; stroke-dashoffset:0; }
@@ -368,7 +446,7 @@
       </div>
     </section>
 
-    <section class="mode framed locked">
+    <section class="mode framed">
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="mode-art" aria-hidden="true">
         <svg viewBox="0 0 120 120">
@@ -393,6 +471,53 @@
       </div>
       <h2>3D</h2>
       <p>Three stacked boards form a cube. Lines can run across layers, straight down or corner to corner.</p>
+      <div class="mode-actions">
+        <a class="tool primary" href="#cube-ai">Play vs AI</a>
+        <a class="tool" href="#cube-pvp">Play with a friend</a>
+      </div>
+    </section>
+
+    <section class="mode framed">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="mode-art" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <path d="M16 7V33M24 7V33M7 16H33M7 24H33M16 47V73M24 47V73M7 56H33M7 64H33M16 87V113M24 87V113M7 96H33M7 104H33M56 7V33M64 7V33M47 16H73M47 24H73M56 47V73M64 47V73M47 56H73M47 64H73M56 87V113M64 87V113M47 96H73M47 104H73M96 7V33M104 7V33M87 16H113M87 24H113M96 47V73M104 47V73M87 56H113M87 64H113M96 87V113M104 87V113M87 96H113M87 104H113" stroke="var(--steel)" stroke-width=".7" fill="none" opacity=".8"/>
+          <path d="M39 2V118M41 2V118M79 2V118M81 2V118" stroke="var(--blue)" stroke-width="1" fill="none"/>
+          <path d="M2 39H118M2 41H118M2 79H118M2 81H118" stroke="var(--blue2)" stroke-width="1" fill="none"/>
+          <rect x="6" y="6" width="28" height="28" fill="var(--panel)"/>
+          <path d="M9 9L31 31M31 9L9 31" stroke="var(--ink)" stroke-width="2.5"/>
+          <rect x="85" y="45" width="30" height="30" fill="var(--panel)"/>
+          <circle cx="100" cy="60" r="11" stroke="var(--blue)" stroke-width="2.5" fill="none"/><circle cx="100" cy="60" r="7" stroke="var(--blue2)" stroke-width="1" fill="none"/>
+          <rect x="44.5" y="84.5" width="31" height="31" fill="none" stroke="var(--ink)" stroke-width="1"/>
+          <path d="M53 91L58 96M58 91L53 96" stroke="var(--ink)" stroke-width="1.4"/>
+          <circle cx="71" cy="101.5" r="3" stroke="var(--blue)" stroke-width="1.4" fill="none"/>
+        </svg>
+      </div>
+      <h2>Ultimate</h2>
+      <p>Nine small boards inside one big one. The square you play decides which small board your opponent must play in next. Win three small boards in a row.</p>
+      <div class="mode-actions">
+        <a class="tool primary" href="#ult-ai">Play vs AI</a>
+        <a class="tool" href="#ult-pvp">Play with a friend</a>
+      </div>
+    </section>
+
+    <section class="mode framed locked">
+      <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
+      <div class="mode-art" aria-hidden="true">
+        <svg viewBox="0 0 120 120" font-family="Playfair Display, Georgia, serif" font-size="26" text-anchor="middle">
+          <path d="M39 3V117M41 3V117M79 3V117M81 3V117" stroke="var(--blue)" stroke-width="1" fill="none"/>
+          <path d="M3 39H117M3 41H117M3 79H117M3 81H117" stroke="var(--blue2)" stroke-width="1" fill="none"/>
+          <text x="20" y="29" fill="var(--ink)">2</text>
+          <text x="100" y="29" fill="var(--blue)">7</text>
+          <text x="60" y="69" fill="var(--blue)">5</text>
+          <text x="20" y="109" fill="var(--blue)">9</text>
+          <text x="100" y="109" fill="var(--ink)">8</text>
+          <text x="60" y="29" fill="var(--ink)">4</text>
+          <path d="M8 8L112 112" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="3 4"/>
+        </svg>
+      </div>
+      <h2>Numbers</h2>
+      <p>One player places odd numbers, the other even, and each number is used once. Make any line that adds up to exactly 15 to win.</p>
       <span class="tag">Coming soon</span>
       <button class="tool" type="button" disabled>Not playable yet</button>
     </section>
@@ -452,6 +577,15 @@
     <div class="board-frame framed">
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="board" id="board" role="grid" aria-label="Game board"></div>
+      <div class="cube" id="cube" role="grid" aria-label="3D board, three layers" hidden></div>
+      <div class="ult" id="ult" role="grid" aria-label="Ultimate board, nine small boards" hidden></div>
+    </div>
+    <p class="ult-note" id="ultNote" hidden>Win a small board to claim it. Where you play inside a board sends your opponent to the matching board. If that board is already decided, they can play in any open board.</p>
+    <div class="picker" id="cubeView" hidden>
+      <span class="picker-label">View</span>
+      <button class="tool pick plain" type="button" data-view="stack" aria-pressed="true">Stacked</button>
+      <button class="tool pick plain" type="button" data-view="flat" aria-pressed="false">Side by side</button>
+      <span class="picker-keys">Arrow keys move within a layer. Hold Shift with up or down to change layer.</span>
     </div>
     <div class="picker" id="picker" hidden>
       <span class="picker-label">Mark to place</span>
@@ -477,7 +611,11 @@
     'fading-ai':  { title:'Fading vs AI',        names:{ X:'You',      O:'AI' },       ai:'fade', fade:true },
     'fading-pvp': { title:'Fading, two players', names:{ X:'Player X', O:'Player O' }, ai:null,   fade:true },
     'chaos-ai':   { title:'Order and Chaos vs AI',        names:{ X:'You',   O:'AI' },    ai:'oc', oc:true, winLen:5, size:6 },
-    'chaos-pvp':  { title:'Order and Chaos, two players', names:{ X:'Order', O:'Chaos' }, ai:null, oc:true, winLen:5, size:6 }
+    'chaos-pvp':  { title:'Order and Chaos, two players', names:{ X:'Order', O:'Chaos' }, ai:null, oc:true, winLen:5, size:6 },
+    'cube-ai':    { title:'3D vs AI',        names:{ X:'You',      O:'AI' },       ai:'cube', cube:true },
+    'cube-pvp':   { title:'3D, two players', names:{ X:'Player X', O:'Player O' }, ai:null,   cube:true },
+    'ult-ai':     { title:'Ultimate vs AI',        names:{ X:'You',      O:'AI' },       ai:'ult', ult:true },
+    'ult-pvp':    { title:'Ultimate, two players', names:{ X:'Player X', O:'Player O' }, ai:null,  ult:true }
   };
   const STORAGE_KEY = 'tictactoe-casework-v1';
 
@@ -620,7 +758,23 @@
     moveCount = 0;
     roundNo = store.round;
     boardEl.classList.remove('done');
-    buildBoard();
+    boardEl.hidden = !!(cfg.cube || cfg.ult);
+    cubeEl.hidden = !cfg.cube;
+    cubeViewEl.hidden = !cfg.cube;
+    ultEl.hidden = ultNote.hidden = !cfg.ult;
+    cubeLine = null;
+    if (cfg.ult) {
+      ult = { cells:Array(81).fill(null), win:Array(9).fill(null), next:-1 };
+      ultLast = -1;
+      ultEl.classList.remove('done');
+      buildUlt();
+    } else if (cfg.cube) {
+      cube = Array(27).fill(null);
+      cubeEl.classList.remove('done');
+      buildCube();
+    } else {
+      buildBoard();
+    }
     render();
     maybeAI(500);
   }
@@ -722,12 +876,31 @@
   function finish(result, line) {
     over = true;
     store.scores[result]++;
-    store.history.unshift({ round:roundNo, result, t:Date.now(), size:sizeText(rows, cols), moves:moveCount,
-      role: cfg.oc ? roleOf(result) : undefined, reason: cfg.oc ? (line ? 'five' : endReason) : undefined });
+    store.history.unshift({ round:roundNo, result, t:Date.now(), size: cfg.cube ? '3×3×3' : sizeText(rows, cols), moves:moveCount,
+      role: cfg.oc ? roleOf(result) : undefined, reason: cfg.oc ? (line ? 'five' : endReason) : undefined,
+      kind: cfg.cube && line ? cubeKind(line) : undefined,
+      boards: cfg.ult ? ult.win.filter(w => w === result).length : undefined });
     store.history = store.history.slice(0, 40);
     store.round++;
     store.starter = store.starter === 'X' ? 'O' : 'X';
     persist();
+    if (cfg.ult) {
+      ultEl.classList.add('done');
+      if (line) {
+        line.forEach(b => ultBoards[b].classList.add('hit'));
+        drawUltLine(line);
+      }
+      return;
+    }
+    if (cfg.cube) {
+      cubeEl.classList.add('done');
+      if (line) {
+        line.forEach(i => cubeEls[i].classList.add('hit'));
+        cubeLine = line;
+        requestAnimationFrame(() => drawCubeLine(true));
+      }
+      return;
+    }
     boardEl.classList.add('done');
     if (line) {
       line.forEach(([r, c]) => cellEls[r][c].classList.add('hit'));
@@ -993,6 +1166,8 @@
     if (!cfg.ai || over || turn !== 'O') return;
     clearTimeout(aiTimer);
     aiTimer = setTimeout(() => {
+      if (cfg.ai === 'cube') { placeCube(aiPickCube()); return; }
+      if (cfg.ai === 'ult') { placeUlt(aiPickUlt()); return; }
       if (cfg.ai === 'oc') {
         const [r, c, m] = aiPickOC();
         place(r, c, m);
@@ -1003,11 +1178,447 @@
     }, delay);
   }
 
+
+  /* ---------- 3D: three stacked 3×3 layers, 49 winning lines ---------- */
+  // cell index i = layer * 9 + row * 3 + col, layer 0 is the top
+  const LAYER_NAMES = ['Top', 'Middle', 'Bottom'];
+  const CUBE_LINES = [];
+  (() => {
+    const inside = v => v >= 0 && v < 3;
+    for (let dz = -1; dz <= 1; dz++) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const d = [dz, dr, dc];
+      const first = d.find(v => v !== 0);
+      if (!first || first < 0) continue;          // keep one of each opposite pair (13 directions)
+      for (let z = 0; z < 3; z++) for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+        if (inside(z - dz) && inside(r - dr) && inside(c - dc)) continue;   // not the start of a line
+        if (!inside(z + 2 * dz) || !inside(r + 2 * dr) || !inside(c + 2 * dc)) continue;
+        CUBE_LINES.push([0, 1, 2].map(k => (z + dz * k) * 9 + (r + dr * k) * 3 + (c + dc * k)));
+      }
+    }
+  })();
+  const CUBE_CELL_LINES = Array.from({ length:27 }, (_, i) => CUBE_LINES.filter(l => l.includes(i)));
+  const CUBE_SLIP = 0.12;        // chance of playing one of its top three quiet moves instead of the best
+
+  let cube = [], cubeEls = [], cubeDots = [], cubeLine = null;
+  const cubeEl = $('cube'), cubeViewEl = $('cubeView');
+  const cubeWinSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  cubeWinSvg.setAttribute('class', 'winline');
+  cubeWinSvg.setAttribute('aria-hidden', 'true');
+
+  const zrc = i => [Math.floor(i / 9), Math.floor(i / 3) % 3, i % 3];
+  const cubeView = () => store.view === 'flat' ? 'flat' : 'stack';
+
+  function cubeKind(line) {
+    const [a, b] = line.map(zrc);
+    const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    if (d[0] === 0) return `Three in a row on the ${LAYER_NAMES[a[0]].toLowerCase()} layer`;
+    if (d[1] === 0 && d[2] === 0) return 'Straight down through all three layers';
+    if (d[1] !== 0 && d[2] !== 0) return 'Corner to corner through the cube';
+    return 'On a slant across the layers';
+  }
+
+  function buildCube() {
+    cubeEl.innerHTML = '';
+    cubeEl.classList.toggle('flat', cubeView() === 'flat');
+    cubeEls = [];
+    for (let z = 0; z < 3; z++) {
+      const wrap = document.createElement('div');
+      wrap.className = 'layer-wrap';
+      wrap.innerHTML = `<div class="layer-name"><b>${z + 1}</b>${LAYER_NAMES[z]}</div>`;
+      const slot = document.createElement('div');
+      slot.className = 'layer-slot';
+      const layer = document.createElement('div');
+      layer.className = 'layer';
+      layer.setAttribute('role', 'rowgroup');
+      for (let k = 1; k < 3; k++) {
+        const v = document.createElement('div'); v.className = 'gl v'; v.style.left = (k / 3 * 100) + '%'; layer.appendChild(v);
+        const h = document.createElement('div'); h.className = 'gl h'; h.style.top = (k / 3 * 100) + '%'; layer.appendChild(h);
+      }
+      for (let a = 1; a < 3; a++) for (let b = 1; b < 3; b++) {
+        const d = document.createElement('i');
+        d.className = 'gx'; d.style.top = (a / 3 * 100) + '%'; d.style.left = (b / 3 * 100) + '%';
+        layer.appendChild(d);
+      }
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+        const i = z * 9 + r * 3 + c;
+        const b = document.createElement('button');
+        b.className = 'cell'; b.type = 'button'; b.dataset.i = i;
+        b.setAttribute('role', 'gridcell');
+        if (cube[i]) b.innerHTML = markSVG(cube[i], false);
+        const dot = document.createElement('i');
+        dot.className = 'cdot';
+        layer.appendChild(dot);
+        dot.style.left = ((c + .5) / 3 * 100) + '%'; dot.style.top = ((r + .5) / 3 * 100) + '%';
+        cubeDots[i] = dot;
+        b.addEventListener('click', () => onCubeClick(i));
+        b.addEventListener('mouseenter', () => echo(i, true));
+        b.addEventListener('mouseleave', () => echo(i, false));
+        b.addEventListener('focus', () => echo(i, true));
+        b.addEventListener('blur', () => echo(i, false));
+        layer.appendChild(b);
+        cubeEls[i] = b;
+      }
+      slot.appendChild(layer);
+      wrap.appendChild(slot);
+      cubeEl.appendChild(wrap);
+    }
+    cubeWinSvg.innerHTML = '';
+    cubeEl.appendChild(cubeWinSvg);
+  }
+
+  // Hovering a square lights up the same square on the other two layers
+  function echo(i, on) {
+    const col = i % 9;
+    for (let z = 0; z < 3; z++) {
+      const el = cubeEls[z * 9 + col];
+      el.classList.toggle('echo', on);
+      el.classList.toggle('self', on && z * 9 + col === i);
+    }
+  }
+
+  function onCubeClick(i) {
+    if (over || cube[i]) return;
+    if (cfg.ai && turn === 'O') return;
+    placeCube(i);
+  }
+
+  function placeCube(i) {
+    moveCount++;
+    cube[i] = turn;
+    cubeEls[i].innerHTML = markSVG(turn, true);
+    notice = '';
+    const line = cubeWinLine(cube, i);
+    if (line) finish(turn, line);
+    else if (cube.every(Boolean)) finish('D', null);
+    else turn = turn === 'X' ? 'O' : 'X';
+    render();
+    maybeAI(520);
+  }
+
+  const cubeWinLine = (g, i) => CUBE_CELL_LINES[i].find(l => l.every(j => g[j] === g[i])) || null;
+
+  function drawCubeLine(animate) {
+    if (!cubeLine || cubeEl.hidden) return;
+    const box = cubeEl.getBoundingClientRect();
+    const pt = i => {
+      const r = cubeDots[i].getBoundingClientRect();
+      return [r.left + r.width / 2 - box.left, r.top + r.height / 2 - box.top];
+    };
+    let [x1, y1] = pt(cubeLine[0]), [x2, y2] = pt(cubeLine[2]);
+    const len = Math.hypot(x2 - x1, y2 - y1) || 1, ex = (x2 - x1) / len * 22, ey = (y2 - y1) / len * 22;
+    x1 -= ex; y1 -= ey; x2 += ex; y2 += ey;
+    const cls = animate ? 'draw' : '';
+    const ln = (stroke, w) => `<line class="${cls}" pathLength="1" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round"/>`;
+    const dm = (x, y) => `<rect x="${x-5}" y="${y-5}" width="10" height="10" transform="rotate(45 ${x} ${y})" fill="var(--blue)" stroke="var(--ink)" stroke-width="1.5"/>`;
+    cubeWinSvg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    cubeWinSvg.innerHTML = ln('var(--blue)', 6) + ln('var(--ink)', 1.5) + dm(x1, y1) + dm(x2, y2);
+  }
+  if ('ResizeObserver' in window) new ResizeObserver(() => drawCubeLine(false)).observe(cubeEl);
+
+  /* 3D AI: wins, blocks, builds double threats, and answers yours; otherwise plays for open lines */
+  const cubeWinsFor = (g, p) => {
+    const out = new Set();
+    CUBE_LINES.forEach(l => {
+      let mine = 0, empty = -1;
+      l.forEach(j => { if (g[j] === p) mine++; else if (!g[j]) empty = j; });
+      if (mine === 2 && empty >= 0) out.add(empty);
+    });
+    return [...out];
+  };
+  const cubeThreatsAfter = (g, p, i) => { g[i] = p; const n = cubeWinsFor(g, p).length; g[i] = null; return n; };
+
+  function cubeScore(g, i) {
+    let s = 0;
+    CUBE_CELL_LINES[i].forEach(l => {
+      let o = 0, x = 0;
+      l.forEach(j => { if (g[j] === 'O') o++; else if (g[j] === 'X') x++; });
+      if (!x) s += [1, 5, 0][o];
+      if (!o) s += [0.9, 4, 0][x];
+    });
+    return s;
+  }
+  function cubeBest(g, cands, slip) {
+    const ranked = cands.map(i => ({ i, s: cubeScore(g, i) + Math.random() * 0.4 })).sort((a, b) => b.s - a.s);
+    if (slip && Math.random() < CUBE_SLIP) return ranked[Math.floor(Math.random() * Math.min(3, ranked.length))].i;
+    return ranked[0].i;
+  }
+
+  function aiPickCube() {
+    const g = cube.slice();
+    const empty = g.map((v, i) => v ? -1 : i).filter(i => i >= 0);
+    const win = cubeWinsFor(g, 'O'); if (win.length) return win[0];
+    const block = cubeWinsFor(g, 'X'); if (block.length) return cubeBest(g, block, false);
+    const forks = empty.filter(i => cubeThreatsAfter(g, 'O', i) >= 2);
+    if (forks.length) return cubeBest(g, forks, false);
+    const theirForks = empty.filter(i => cubeThreatsAfter(g, 'X', i) >= 2);
+    if (theirForks.length === 1) return theirForks[0];
+    if (theirForks.length > 1) {
+      // make a threat of our own so their reply is forced, as long as that reply doesn't hand them a fork
+      const forcing = empty.filter(i => {
+        g[i] = 'O';
+        const replies = cubeWinsFor(g, 'O');
+        const ok = replies.length === 1 && cubeThreatsAfter(g, 'X', replies[0]) < 2;
+        g[i] = null;
+        return ok;
+      });
+      if (forcing.length) return cubeBest(g, forcing, false);
+      return cubeBest(g, theirForks, false);
+    }
+    return cubeBest(g, empty, true);
+  }
+
+  cubeViewEl.querySelectorAll('.pick').forEach(b => b.addEventListener('click', () => {
+    store.view = b.dataset.view;
+    persist();
+    cubeEl.classList.toggle('flat', cubeView() === 'flat');
+    render();
+    setTimeout(() => drawCubeLine(false), 520);
+  }));
+
+  cubeEl.addEventListener('keydown', e => {
+    const el = document.activeElement;
+    if (!el || !el.classList.contains('cell')) return;
+    const moves = { ArrowLeft:[0,0,-1], ArrowRight:[0,0,1], ArrowUp:[0,-1,0], ArrowDown:[0,1,0] };
+    if (!(e.key in moves)) return;
+    e.preventDefault();
+    let [z, r, c] = zrc(+el.dataset.i);
+    let [dz, dr, dc] = moves[e.key];
+    if (e.shiftKey && dr) { dz = dr; dr = 0; }
+    while (true) {
+      z += dz; r += dr; c += dc;
+      if (z < 0 || z > 2 || r < 0 || r > 2 || c < 0 || c > 2) return;
+      const t = cubeEls[z * 9 + r * 3 + c];
+      if (!t.disabled) { t.focus(); return; }
+    }
+  });
+
+
+  /* ---------- Ultimate: 81 squares, index = board * 9 + square; both run 0..8 left to right, top to bottom ---------- */
+  const BOARD_NAMES = ['top left', 'top middle', 'top right', 'middle left', 'center', 'middle right', 'bottom left', 'bottom middle', 'bottom right'];
+  const ULT_WEIGHT = [1.2, 1, 1.2, 1, 1.5, 1, 1.2, 1, 1.2];   // corners and center sit on more big lines
+  const ULT_THINK_MS = 350;      // raise for a tougher AI, lower for an easier one
+  const ULT_SLIP = 0.1;          // chance of playing its second choice when the two are close
+
+  let ult = null, ultLast = -1, ultCells = [], ultBoards = [], ultMarks = [];
+  const ultEl = $('ult'), ultNote = $('ultNote');
+  const ultWinSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  ultWinSvg.setAttribute('class', 'winline');
+  ultWinSvg.setAttribute('aria-hidden', 'true');
+  ultWinSvg.setAttribute('viewBox', '0 0 300 300');
+
+  function buildUlt() {
+    ultEl.innerHTML = '';
+    for (let k = 1; k < 3; k++) {
+      const v = document.createElement('div'); v.className = 'gl v'; v.style.left = (k / 3 * 100) + '%'; ultEl.appendChild(v);
+      const h = document.createElement('div'); h.className = 'gl h'; h.style.top = (k / 3 * 100) + '%'; ultEl.appendChild(h);
+    }
+    for (let a = 1; a < 3; a++) for (let b = 1; b < 3; b++) {
+      const d = document.createElement('i');
+      d.className = 'gx'; d.style.top = (a / 3 * 100) + '%'; d.style.left = (b / 3 * 100) + '%';
+      ultEl.appendChild(d);
+    }
+    ultCells = []; ultBoards = []; ultMarks = [];
+    for (let b = 0; b < 9; b++) {
+      const box = document.createElement('div');
+      box.className = 'ub';
+      box.setAttribute('role', 'rowgroup');
+      const inner = document.createElement('div');
+      inner.className = 'ub-inner';
+      for (let k = 1; k < 3; k++) {
+        const v = document.createElement('div'); v.className = 'gl v'; v.style.left = (k / 3 * 100) + '%'; inner.appendChild(v);
+        const h = document.createElement('div'); h.className = 'gl h'; h.style.top = (k / 3 * 100) + '%'; inner.appendChild(h);
+      }
+      for (let k = 0; k < 9; k++) {
+        const i = b * 9 + k;
+        const c = document.createElement('button');
+        c.className = 'cell'; c.type = 'button'; c.dataset.i = i;
+        c.setAttribute('role', 'gridcell');
+        c.addEventListener('click', () => onUltClick(i));
+        inner.appendChild(c);
+        ultCells[i] = c;
+      }
+      const mark = document.createElement('div');
+      mark.className = 'ub-mark';
+      box.append(inner, mark);
+      ultEl.appendChild(box);
+      ultBoards[b] = box; ultMarks[b] = mark;
+    }
+    ultWinSvg.innerHTML = '';
+    ultEl.appendChild(ultWinSvg);
+  }
+
+  /* Rules, shared by the game and the AI search */
+  const ultLineWin = (arr, at, p) => FLAT_LINES.find(l => l.every(j => arr[at + j] === p)) || null;
+  function ultLegal(st) {
+    const out = [];
+    const boards = st.next >= 0 && !st.win[st.next] ? [st.next] : [0,1,2,3,4,5,6,7,8].filter(b => !st.win[b]);
+    boards.forEach(b => { for (let k = 0; k < 9; k++) if (!st.cells[b * 9 + k]) out.push(b * 9 + k); });
+    return out;
+  }
+  // plays i for p; returns what is needed to undo it
+  function ultApply(st, i, p) {
+    const b = Math.floor(i / 9), k = i % 9;
+    const undo = { i, b, next:st.next, win:st.win[b] };
+    st.cells[i] = p;
+    if (ultLineWin(st.cells, b * 9, p)) st.win[b] = p;
+    else { let full = true; for (let j = 0; j < 9; j++) if (!st.cells[b * 9 + j]) { full = false; break; } if (full) st.win[b] = 'D'; }
+    st.next = st.win[k] ? -1 : k;
+    return undo;
+  }
+  function ultUndo(st, u) { st.cells[u.i] = null; st.win[u.b] = u.win; st.next = u.next; }
+  const ultBigLine = (st, p) => FLAT_LINES.find(l => l.every(b => st.win[b] === p)) || null;
+
+  function onUltClick(i) {
+    if (over || ult.cells[i]) return;
+    if (cfg.ai && turn === 'O') return;
+    if (!ultLegal(ult).includes(i)) return;
+    placeUlt(i);
+  }
+
+  function placeUlt(i) {
+    const b = Math.floor(i / 9), k = i % 9;
+    const before = ult.win[b];
+    ultApply(ult, i, turn);
+    moveCount++;
+    ultLast = i;
+    ultCells[i].innerHTML = markSVG(turn, true);
+    notice = '';
+    if (!before && ult.win[b] === turn) ultMarks[b].innerHTML = markSVG(turn, true);
+    const line = ultBigLine(ult, turn);
+    if (line) finish(turn, line);
+    else if (!ultLegal(ult).length) finish('D', null);
+    else {
+      turn = turn === 'X' ? 'O' : 'X';
+      if (ult.next < 0) notice = ult.win[k] ? `The ${BOARD_NAMES[k]} board is decided, so any open board is fine.` : '';
+    }
+    render();
+    maybeAI(ult.win[b] && !before ? 700 : 450);
+  }
+
+  function drawUltLine(line) {
+    const pt = b => [(b % 3) * 100 + 50, Math.floor(b / 3) * 100 + 50];
+    let [x1, y1] = pt(line[0]), [x2, y2] = pt(line[2]);
+    const len = Math.hypot(x2 - x1, y2 - y1), ex = (x2 - x1) / len * 30, ey = (y2 - y1) / len * 30;
+    x1 -= ex; y1 -= ey; x2 += ex; y2 += ey;
+    const ln = (stroke, w) => `<line class="draw" pathLength="1" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${w}"/>`;
+    const dm = (x, y) => `<rect x="${x-4}" y="${y-4}" width="8" height="8" transform="rotate(45 ${x} ${y})" fill="var(--blue)" stroke="var(--ink)" stroke-width="1.2"/>`;
+    ultWinSvg.innerHTML = ln('var(--blue)', 6) + ln('var(--ink)', 1.2) + dm(x1, y1) + dm(x2, y2);
+  }
+
+  function renderUlt(lockBoard) {
+    const legal = new Set(over ? [] : ultLegal(ult));
+    const openBoards = new Set([...legal].map(i => Math.floor(i / 9)));
+    for (let b = 0; b < 9; b++) {
+      const w = ult.win[b];
+      ultBoards[b].classList.toggle('active', !over && openBoards.has(b));
+      ultBoards[b].classList.toggle('won', w === 'X' || w === 'O');
+      ultBoards[b].classList.toggle('drawn', w === 'D');
+    }
+    ultCells.forEach((el, i) => {
+      const b = Math.floor(i / 9), k = i % 9, v = ult.cells[i];
+      el.disabled = lockBoard || !legal.has(i);
+      el.classList.toggle('last', i === ultLast && !over);
+      el.setAttribute('aria-label', `${cap(BOARD_NAMES[b])} board, row ${Math.floor(k / 3) + 1}, column ${k % 3 + 1}, ${v || 'empty'}`);
+    });
+  }
+  const ultWhere = () => ult.next >= 0 && !ult.win[ult.next] ? `the ${BOARD_NAMES[ult.next]} board` : 'any open board';
+
+  /* Ultimate AI: alpha-beta search, deepening until its thinking time runs out */
+  function ultEval(st) {
+    let score = 0;
+    const bv = [];
+    for (let b = 0; b < 9; b++) {
+      const w = st.win[b];
+      if (w === 'O') bv[b] = 1;
+      else if (w === 'X') bv[b] = -1;
+      else if (w === 'D') bv[b] = 0;
+      else {
+        let lo = 0, lx = 0;
+        for (const l of FLAT_LINES) {
+          let o = 0, x = 0;
+          for (const j of l) { const v = st.cells[b * 9 + j]; if (v === 'O') o++; else if (v === 'X') x++; }
+          if (!x) lo += [0, 1, 4][o] || 0;
+          if (!o) lx += [0, 1, 4][x] || 0;
+        }
+        bv[b] = Math.max(-0.7, Math.min(0.7, (lo - lx) / 14));
+      }
+      score += bv[b] * ULT_WEIGHT[b] * 30;
+    }
+    for (const l of FLAT_LINES) {
+      let o = 0, x = 0, dead = false;
+      for (const b of l) { const w = st.win[b]; if (w === 'O') o++; else if (w === 'X') x++; else if (w === 'D') dead = true; }
+      if (dead) continue;
+      if (!x) score += [0, 12, 60][o] || 0;
+      if (!o) score -= [0, 12, 60][x] || 0;
+    }
+    return score;
+  }
+
+  function aiPickUlt() {
+    const st = { cells:ult.cells.slice(), win:ult.win.slice(), next:ult.next };
+    const deadline = Date.now() + ULT_THINK_MS;
+    const STOP = {};
+    let nodes = 0;
+    function negamax(p, depth, alpha, beta) {
+      if ((++nodes & 511) === 0 && Date.now() > deadline) throw STOP;
+      const moves = ultLegal(st);
+      if (!moves.length) return 0;
+      const sign = p === 'O' ? 1 : -1;
+      if (depth === 0) return sign * ultEval(st);
+      const other = p === 'O' ? 'X' : 'O';
+      let best = -Infinity;
+      for (const m of moves) {
+        const u = ultApply(st, m, p);
+        const v = ultBigLine(st, p) ? 10000 + depth : -negamax(other, depth - 1, -beta, -alpha);
+        ultUndo(st, u);
+        if (v > best) best = v;
+        if (v > alpha) alpha = v;
+        if (alpha >= beta) break;
+      }
+      return best;
+    }
+    let root = ultLegal(st).map(i => ({ i, s:Math.random() * 3 }));
+    for (let depth = 1; depth <= 12; depth++) {
+      try {
+        const scored = root.map(r => {
+          const u = ultApply(st, r.i, 'O');
+          const s = ultBigLine(st, 'O') ? 20000 : -negamax('X', depth - 1, -Infinity, Infinity);
+          ultUndo(st, u);
+          return { i:r.i, s:s + Math.random() * 3 };
+        });
+        root = scored.sort((a, b) => b.s - a.s);   // best first, which also speeds up the next depth
+        if (root[0].s > 9000 || root.length === 1) break;
+      } catch (e) {
+        if (e !== STOP) throw e;
+        break;
+      }
+    }
+    if (root.length > 1 && root[0].s < 9000 && root[0].s - root[1].s < 15 && Math.random() < ULT_SLIP) return root[1].i;
+    return root[0].i;
+  }
+
+  ultEl.addEventListener('keydown', e => {
+    const el = document.activeElement;
+    if (!el || !el.classList.contains('cell')) return;
+    const moves = { ArrowLeft:[0,-1], ArrowRight:[0,1], ArrowUp:[-1,0], ArrowDown:[1,0] };
+    if (!(e.key in moves)) return;
+    e.preventDefault();
+    const i = +el.dataset.i, b = Math.floor(i / 9), k = i % 9;
+    let r = Math.floor(b / 3) * 3 + Math.floor(k / 3), c = (b % 3) * 3 + k % 3;
+    const [dr, dc] = moves[e.key];
+    while (true) {
+      r += dr; c += dc;
+      if (r < 0 || r > 8 || c < 0 || c > 8) return;
+      const t = ultCells[(Math.floor(r / 3) * 3 + Math.floor(c / 3)) * 9 + (r % 3) * 3 + c % 3];
+      if (!t.disabled) { t.focus(); return; }
+    }
+  });
+
   /* ---------- Rendering ---------- */
   function render() {
     const n = names();
     roundLabel.textContent = cfg.grow ? `Round ${roundNo}, board ${sizeText(rows, cols)}`
-      : (cfg.fade || cfg.oc) ? `Round ${roundNo}, move ${over ? moveCount : moveCount + 1}`
+      : (cfg.fade || cfg.oc || cfg.cube || cfg.ult) ? `Round ${roundNo}, move ${over ? moveCount : moveCount + 1}`
       : `Round ${roundNo}`;
     const fadesNext = cfg.fade && !over && marks[turn].length === FADE_LIMIT;
 
@@ -1022,23 +1633,35 @@
       void statusMain.offsetWidth;
       statusMain.classList.add('reveal');
       statusHint.textContent = last.result === 'D'
-        ? 'Nobody got three in a row.'
+        ? (cfg.ult ? 'Every board is decided and nobody got three in a row.' : 'Nobody got three in a row.')
+        : cfg.ult ? `Three boards in a row, in ${last.moves} moves.`
+        : cfg.cube && last.kind ? `${last.kind}, in ${last.moves} moves.`
         : cfg.grow ? `Won on a ${last.size} board.`
         : cfg.fade ? `Won in ${last.moves} moves.`
         : 'Start a new round when you are ready.';
     } else if (cfg.ai) {
       statusMain.textContent = turn === 'X' ? 'Your turn' : 'AI is thinking';
       statusHint.textContent = notice || (turn === 'X'
-        ? (fadesNext ? 'Your dimmed X disappears when you play.' : cfg.fade ? 'You play X. Only three marks each.' : 'You play X. Get three in a row.')
+        ? (fadesNext ? 'Your dimmed X disappears when you play.' : cfg.fade ? 'You play X. Only three marks each.'
+          : cfg.cube ? 'You play X. Three in a line, in any direction.'
+          : cfg.ult ? `Play in ${ultWhere()}.` : 'You play X. Get three in a row.')
         : 'The AI plays O.');
     } else {
       statusMain.textContent = turn + ' to move';
-      statusHint.textContent = fadesNext ? `${n[turn]}, your dimmed ${turn} disappears when you play.` : n[turn] + ', pick a square.';
+      statusHint.textContent = fadesNext ? `${n[turn]}, your dimmed ${turn} disappears when you play.`
+        : cfg.cube ? n[turn] + ', pick a square on any layer.'
+        : cfg.ult ? `${n[turn]}, play in ${ultWhere()}.` : n[turn] + ', pick a square.';
     }
 
     const lockBoard = over || (cfg.ai && turn === 'O');
     const fadeCell = fadesNext ? marks[turn][0] : null;
-    cellEls.forEach((rowEls, r) => rowEls.forEach((el, c) => {
+    if (cfg.ult) renderUlt(lockBoard);
+    else if (cfg.cube) cubeEls.forEach((el, i) => {
+      const [z, r, c] = zrc(i);
+      el.disabled = lockBoard || !!cube[i];
+      el.setAttribute('aria-label', `${LAYER_NAMES[z]} layer, row ${r + 1}, column ${c + 1}, ${cube[i] || 'empty'}`);
+    });
+    else cellEls.forEach((rowEls, r) => rowEls.forEach((el, c) => {
       const isFading = !!fadeCell && fadeCell[0] === r && fadeCell[1] === c;
       el.classList.toggle('fading', isFading);
       el.disabled = lockBoard || !!grid[r][c];
@@ -1046,10 +1669,11 @@
     }));
 
     $('nameX').textContent = n.X; $('nameO').textContent = n.O;
-    $('nameD').textContent = cfg.grow ? 'Lines added' : (cfg.fade || cfg.oc) ? 'Rounds' : 'Draws';
+    $('nameD').textContent = cfg.grow ? 'Lines added' : (cfg.fade || cfg.oc || cfg.cube) ? 'Rounds' : 'Draws';
     $('numX').textContent = store.scores.X;
     $('numO').textContent = store.scores.O;
-    $('numD').textContent = cfg.grow ? (store.added || 0) : (cfg.fade || cfg.oc) ? store.round - 1 : store.scores.D;
+    $('numD').textContent = cfg.grow ? (store.added || 0) : (cfg.fade || cfg.oc || cfg.cube) ? store.round - 1 : store.scores.D;
+    cubeViewEl.querySelectorAll('.pick').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === cubeView())));
     $('scoreX').classList.toggle('on', !over && turn === 'X');
     $('scoreO').classList.toggle('on', !over && turn === 'O');
 
@@ -1070,7 +1694,7 @@
       const time = new Date(h.t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
       const size = cfg.grow && h.size ? `<span class="h-size">${h.size}</span>`
         : cfg.oc && cfg.ai && h.role ? `<span class="h-size">as ${cap(h.role)}</span>`
-        : (cfg.fade || cfg.oc) && h.moves ? `<span class="h-size">${h.moves} moves</span>` : '';
+        : (cfg.fade || cfg.oc || cfg.cube || cfg.ult) && h.moves ? `<span class="h-size">${h.moves} moves</span>` : '';
       return `<li class="history-item ${h.result === 'O' ? 'o' : ''}"><span class="h-round">Round ${h.round}</span><span><span class="h-res">${resultText(h.result)}</span>${size}</span><span class="h-time">${time}</span></li>`;
     }).join('');
   }
@@ -1142,7 +1766,7 @@
     }
   });
 
-  /* ---------- Routing (#ai, #pvp, #extreme, #fading-ai, #fading-pvp, #chaos-ai, #chaos-pvp; anything else = start screen) ---------- */
+  /* ---------- Routing (#ai, #pvp, #extreme, #fading-ai, #fading-pvp, #chaos-ai, #chaos-pvp, #cube-ai, #cube-pvp, #ult-ai, #ult-pvp; anything else = start screen) ---------- */
   function route() {
     clearTimeout(aiTimer);
     const key = location.hash.slice(1);
