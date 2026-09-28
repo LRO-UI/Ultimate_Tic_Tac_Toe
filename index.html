@@ -320,6 +320,54 @@
   }
   @media (prefers-reduced-motion: reduce){ .layer{ transition:none; } }
 
+
+  /* ---------- Numbers: odd against even, lines of 15 ---------- */
+  .num-tray{ display:grid; gap:12px; justify-items:center; margin-top:24px; }
+  .num-row{ display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity .25s ease; }
+  .num-who{
+    width:96px; text-align:right; margin-right:6px;
+    font-size:.66rem; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-soft); line-height:1.35;
+  }
+  .num-who b{ display:block; font-weight:600; letter-spacing:.14em; color:var(--ink-soft); }
+  .num-row.turn .num-who b{ color:var(--ink); }
+  .num-row.waiting{ opacity:.5; }
+  .tool.num-tile{
+    width:48px; height:48px; padding:0; display:grid; place-items:center;
+    font-family:var(--font-display); font-size:1.45rem; font-weight:500;
+    letter-spacing:0; text-transform:none; line-height:1;
+  }
+  .num-row.even .num-tile{ color:var(--blue2); }
+  .tool.num-tile.used{ text-decoration:line-through; opacity:.3; }
+  .tool.num-tile[aria-pressed="true"]{ --c:#fff; border-color:var(--ink); background-color:#1d2736; }
+  .num-row.even .num-tile[aria-pressed="true"]{ border-color:var(--blue); }
+  .num-cell text{ font-family:var(--font-display); font-weight:500; }
+  .num-cell.pop{ animation:numpop .35s cubic-bezier(.2,1.5,.4,1); transform-origin:50% 50%; transform-box:fill-box; }
+  @keyframes numpop{ from{ transform:scale(.6); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .board-frame.num{ padding:58px; }
+  .board-frame.num .board{ width:min(calc(100cqw - 116px), calc(100cqh - 116px - var(--extra)), 600px); }
+  .sum{
+    position:absolute; z-index:4; pointer-events:none; transform:translate(-50%, -50%);
+    min-width:26px; padding:2px 6px; text-align:center; background:var(--bg); border:1px solid var(--line);
+    font-size:.74rem; font-variant-numeric:tabular-nums lining-nums; color:var(--ink-soft);
+  }
+  .sum:empty{ display:none; }
+  .board-frame.num .cell{ position:relative; z-index:2; }
+  .board-frame.num .winline{ z-index:1; opacity:.6; }
+  .sum.two{ color:var(--ink); }
+  .sum.win{ color:#fff; font-weight:700; border-color:var(--blue); }
+  .sum.dead{ opacity:.35; text-decoration:line-through; }
+  .sum.diag{ font-style:italic; }
+
+  @media (max-width: 860px){
+    .num-row{ flex-wrap:wrap; }
+    .num-who{ width:100%; text-align:center; margin:0; }
+    .num-who b{ display:inline; margin-left:8px; }
+    .tool.num-tile{ width:44px; height:44px; }
+    .board-frame.num{ padding:46px; }
+    .board-frame.num .board{ width:min(calc(100cqw - 92px), 62vh); }
+  }
+  @media (prefers-reduced-motion: reduce){ .num-cell.pop{ animation:none; } }
+
   /* ---------- Ultimate: nine small boards inside one big one ---------- */
   .ult{
     --u:min(calc(100cqw - 56px), calc(100cqh - 56px - 20px), 760px);
@@ -501,7 +549,7 @@
       </div>
     </section>
 
-    <section class="mode framed locked">
+    <section class="mode framed">
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="mode-art" aria-hidden="true">
         <svg viewBox="0 0 120 120" font-family="Playfair Display, Georgia, serif" font-size="26" text-anchor="middle">
@@ -518,8 +566,10 @@
       </div>
       <h2>Numbers</h2>
       <p>One player places odd numbers, the other even, and each number is used once. Make any line that adds up to exactly 15 to win.</p>
-      <span class="tag">Coming soon</span>
-      <button class="tool" type="button" disabled>Not playable yet</button>
+      <div class="mode-actions">
+        <a class="tool primary" href="#num-ai">Play vs AI</a>
+        <a class="tool" href="#num-pvp">Play with a friend</a>
+      </div>
     </section>
   </div>
 </main>
@@ -580,6 +630,11 @@
       <div class="cube" id="cube" role="grid" aria-label="3D board, three layers" hidden></div>
       <div class="ult" id="ult" role="grid" aria-label="Ultimate board, nine small boards" hidden></div>
     </div>
+    <div class="num-tray" id="numTray" hidden>
+      <div class="num-row odd" data-par="odd"><div class="num-who">Odd<b></b></div></div>
+      <div class="num-row even" data-par="even"><div class="num-who">Even<b></b></div></div>
+      <span class="picker-keys">Pick a number, then a square. Number keys work too. The small figures around the board are each line's running total.</span>
+    </div>
     <p class="ult-note" id="ultNote" hidden>Win a small board to claim it. Where you play inside a board sends your opponent to the matching board. If that board is already decided, they can play in any open board.</p>
     <div class="picker" id="cubeView" hidden>
       <span class="picker-label">View</span>
@@ -615,7 +670,9 @@
     'cube-ai':    { title:'3D vs AI',        names:{ X:'You',      O:'AI' },       ai:'cube', cube:true },
     'cube-pvp':   { title:'3D, two players', names:{ X:'Player X', O:'Player O' }, ai:null,   cube:true },
     'ult-ai':     { title:'Ultimate vs AI',        names:{ X:'You',      O:'AI' },       ai:'ult', ult:true },
-    'ult-pvp':    { title:'Ultimate, two players', names:{ X:'Player X', O:'Player O' }, ai:null,  ult:true }
+    'ult-pvp':    { title:'Ultimate, two players', names:{ X:'Player X', O:'Player O' }, ai:null,  ult:true },
+    'num-ai':     { title:'Numbers vs AI',        names:{ X:'You',      O:'AI' },       ai:'num', num:true },
+    'num-pvp':    { title:'Numbers, two players', names:{ X:'Player 1', O:'Player 2' }, ai:null,  num:true }
   };
   const STORAGE_KEY = 'tictactoe-casework-v1';
 
@@ -697,6 +754,7 @@
   const resultText = res => {
     if (res === 'D') return 'Draw';
     if (cfg.oc && !cfg.ai) return (res === 'X' ? 'Order' : 'Chaos') + ' wins';
+    if (cfg.num && !cfg.ai) return cfg.names[res] + ' wins';
     if (cfg.ai) return res === 'X' ? 'You win' : 'AI wins';
     return res + ' wins';
   };
@@ -751,7 +809,9 @@
     grid = Array.from({ length:rows }, () => Array(cols).fill(null));
     turn = cfg.oc ? slotOf('order') : store.starter;
     pickMark = 'X'; endReason = '';
-    boardEl.style.setProperty('--extra', cfg.oc ? '92px' : '0px');
+    boardEl.style.setProperty('--extra', cfg.oc ? '92px' : cfg.num ? '150px' : '0px');
+    numTray.hidden = !cfg.num;
+    boardEl.parentElement.classList.toggle('num', !!cfg.num);
     over = false;
     notice = '';
     marks = { X:[], O:[] };
@@ -774,6 +834,7 @@
       buildCube();
     } else {
       buildBoard();
+      if (cfg.num) startNumbers();
     }
     render();
     maybeAI(500);
@@ -782,6 +843,7 @@
   function onCellClick(r, c) {
     if (over || grid[r][c]) return;
     if (cfg.ai && turn === 'O') return;
+    if (cfg.num) { if (numPick) placeNum(r, c, numPick); return; }
     place(r, c, cfg.oc ? pickMark : turn);
   }
 
@@ -878,7 +940,8 @@
     store.scores[result]++;
     store.history.unshift({ round:roundNo, result, t:Date.now(), size: cfg.cube ? '3×3×3' : sizeText(rows, cols), moves:moveCount,
       role: cfg.oc ? roleOf(result) : undefined, reason: cfg.oc ? (line ? 'five' : endReason) : undefined,
-      kind: cfg.cube && line ? cubeKind(line) : undefined,
+      kind: cfg.cube && line ? cubeKind(line) : cfg.num && line ? line.map(([r, c]) => grid[r][c]).join(' + ') + ' = 15' : undefined,
+      par: cfg.num && result !== 'D' ? parityOf(result) : undefined,
       boards: cfg.ult ? ult.win.filter(w => w === result).length : undefined });
     store.history = store.history.slice(0, 40);
     store.round++;
@@ -1168,6 +1231,7 @@
     aiTimer = setTimeout(() => {
       if (cfg.ai === 'cube') { placeCube(aiPickCube()); return; }
       if (cfg.ai === 'ult') { placeUlt(aiPickUlt()); return; }
+      if (cfg.ai === 'num') { const [r, c, n] = aiPickNum(); placeNum(r, c, n); return; }
       if (cfg.ai === 'oc') {
         const [r, c, m] = aiPickOC();
         place(r, c, m);
@@ -1614,11 +1678,159 @@
     }
   });
 
+
+  /* ---------- Numbers: 1 to 9 used once each; odd moves first; any full line adding to 15 wins ---------- */
+  const NUM_SETS = { odd:[1, 3, 5, 7, 9], even:[2, 4, 6, 8] };
+  const NUM_THINK_MS = 400;      // raise for a tougher AI, lower for an easier one
+  const NUM_SLIP = 0.12;         // chance of playing any move that doesn't lose on the spot
+  const numTray = $('numTray');
+  let numUsed = new Set(), numOddSlot = 'X', numPick = null, numSums = [];
+
+  const parityOf = slot => slot === numOddSlot ? 'odd' : 'even';
+  const numAvail = par => NUM_SETS[par].filter(n => !numUsed.has(n));
+  const article = par => par === 'odd' ? 'an odd' : 'an even';
+
+  // tiles for both sets, built once
+  ['odd', 'even'].forEach(par => {
+    const row = numTray.querySelector(`.num-row.${par}`);
+    NUM_SETS[par].forEach(n => {
+      const b = document.createElement('button');
+      b.className = 'tool num-tile'; b.type = 'button'; b.dataset.n = n;
+      b.textContent = n;
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => { numPick = n; render(); });
+      row.appendChild(b);
+    });
+  });
+
+  const numSVG = (n, animate) => `<svg viewBox="0 0 100 100" aria-hidden="true"><text class="num-cell${animate ? ' pop' : ''}" x="50" y="53"
+    text-anchor="middle" dominant-baseline="central" font-size="66" fill="${n % 2 ? 'var(--ink)' : 'var(--blue)'}">${n}</text>
+    ${n % 2 ? '' : '<path d="M36 84H64" stroke="var(--blue2)" stroke-width="1.5"/>'}</svg>`;
+
+  function startNumbers() {
+    numUsed = new Set();
+    numOddSlot = turn;               // whoever starts the round plays odd
+    numPick = null;
+    numSums = FLAT_LINES.map((l, k) => {
+      const el = document.createElement('span');
+      el.className = 'sum' + (k >= 6 ? ' diag' : '');
+      if (k < 3) { el.style.left = 'calc(100% + 22px)'; el.style.top = ((k + .5) / 3 * 100) + '%'; }
+      else if (k < 6) { el.style.left = ((k - 3 + .5) / 3 * 100) + '%'; el.style.top = 'calc(100% + 22px)'; }
+      else if (k === 6) { el.style.left = 'calc(100% + 22px)'; el.style.top = 'calc(100% + 22px)'; }
+      else { el.style.left = '-22px'; el.style.top = 'calc(100% + 22px)'; }
+      boardEl.appendChild(el);
+      return el;
+    });
+  }
+
+  function placeNum(r, c, n) {
+    grid[r][c] = n;
+    numUsed.add(n);
+    moveCount++;
+    cellEls[r][c].innerHTML = numSVG(n, true);
+    notice = '';
+    const i = r * 3 + c;
+    const hit = FLAT_LINES.find(l => l.includes(i) && l.every(j => grid[Math.floor(j / 3)][j % 3])
+      && l.reduce((a, j) => a + grid[Math.floor(j / 3)][j % 3], 0) === 15);
+    if (hit) finish(turn, hit.map(j => [Math.floor(j / 3), j % 3]));
+    else if (isFull()) finish('D', null);
+    else turn = turn === 'X' ? 'O' : 'X';
+    numPick = null;
+    render();
+    maybeAI(650);
+  }
+
+  function renderNum(lockBoard) {
+    const n = names();
+    const mine = parityOf(turn);
+    if (!over && (!numPick || numUsed.has(numPick) || (numPick % 2 ? 'odd' : 'even') !== mine)) numPick = numAvail(mine)[0] || null;
+    ['odd', 'even'].forEach(par => {
+      const row = numTray.querySelector(`.num-row.${par}`);
+      const slot = numOddSlot === 'X' ? (par === 'odd' ? 'X' : 'O') : (par === 'odd' ? 'O' : 'X');
+      row.querySelector('.num-who b').textContent = n[slot];
+      const active = !over && par === mine;
+      row.classList.toggle('turn', active);
+      row.classList.toggle('waiting', !over && !active);
+      row.querySelectorAll('.num-tile').forEach(b => {
+        const v = +b.dataset.n, used = numUsed.has(v);
+        b.classList.toggle('used', used);
+        b.disabled = used || !active || lockBoard;
+        b.setAttribute('aria-pressed', String(active && v === numPick));
+        b.setAttribute('aria-label', `${v}${used ? ', used' : ''}`);
+      });
+    });
+    const g = grid.flat();
+    FLAT_LINES.forEach((l, k) => {
+      const vals = l.map(j => g[j]).filter(Boolean);
+      const sum = vals.reduce((a, v) => a + v, 0);
+      const el = numSums[k];
+      el.textContent = vals.length ? sum : '';
+      const win = vals.length === 3 && sum === 15;
+      el.classList.toggle('win', win);
+      el.classList.toggle('two', vals.length === 2 && sum < 15);
+      el.classList.toggle('dead', !win && (vals.length === 3 || sum >= 15));
+    });
+  }
+
+  /* Numbers AI: alpha-beta over (square, number) pairs, deepening until its time runs out */
+  function aiPickNum() {
+    const g = grid.flat();
+    const used = new Set(numUsed);
+    const deadline = Date.now() + NUM_THINK_MS;
+    const STOP = {};
+    let nodes = 0;
+    const wins = i => FLAT_LINES.some(l => l.includes(i) && g[l[0]] && g[l[1]] && g[l[2]] && g[l[0]] + g[l[1]] + g[l[2]] === 15);
+    const movesFor = par => {
+      const out = [];
+      const nums = NUM_SETS[par].filter(n => !used.has(n));
+      for (let i = 0; i < 9; i++) if (!g[i]) nums.forEach(n => out.push([i, n]));
+      return out;
+    };
+    function negamax(par, depth, alpha, beta) {
+      if ((++nodes & 1023) === 0 && Date.now() > deadline) throw STOP;
+      const moves = movesFor(par);
+      if (!moves.length) return 0;
+      const other = par === 'odd' ? 'even' : 'odd';
+      let best = -Infinity;
+      for (const [i, n] of moves) {
+        g[i] = n; used.add(n);
+        const v = wins(i) ? 1000 + depth : depth <= 1 ? 0 : -negamax(other, depth - 1, -beta, -alpha);
+        g[i] = null; used.delete(n);
+        if (v > best) best = v;
+        if (v > alpha) alpha = v;
+        if (alpha >= beta) break;
+      }
+      return best;
+    }
+    const par = parityOf('O'), other = par === 'odd' ? 'even' : 'odd';
+    let root = movesFor(par).map(([i, n]) => ({ i, n, s:Math.random() }));
+    for (let depth = 1; depth <= 9; depth++) {
+      try {
+        root = root.map(m => {
+          g[m.i] = m.n; used.add(m.n);
+          const v = wins(m.i) ? 5000 : depth === 1 ? 0 : -negamax(other, depth - 1, -Infinity, Infinity);
+          g[m.i] = null; used.delete(m.n);
+          return { i:m.i, n:m.n, s:v + Math.random() * 0.5 };
+        }).sort((a, b) => b.s - a.s);
+        if (root[0].s > 900) break;
+      } catch (e) {
+        if (e !== STOP) throw e;
+        break;
+      }
+    }
+    let pick = root[0];
+    if (pick.s < 900 && Math.random() < NUM_SLIP) {
+      const safe = root.filter(m => m.s > -900);
+      if (safe.length) pick = safe[Math.floor(Math.random() * safe.length)];
+    }
+    return [Math.floor(pick.i / 3), pick.i % 3, pick.n];
+  }
+
   /* ---------- Rendering ---------- */
   function render() {
     const n = names();
     roundLabel.textContent = cfg.grow ? `Round ${roundNo}, board ${sizeText(rows, cols)}`
-      : (cfg.fade || cfg.oc || cfg.cube || cfg.ult) ? `Round ${roundNo}, move ${over ? moveCount : moveCount + 1}`
+      : (cfg.fade || cfg.oc || cfg.cube || cfg.ult || cfg.num) ? `Round ${roundNo}, move ${over ? moveCount : moveCount + 1}`
       : `Round ${roundNo}`;
     const fadesNext = cfg.fade && !over && marks[turn].length === FADE_LIMIT;
 
@@ -1633,7 +1845,9 @@
       void statusMain.offsetWidth;
       statusMain.classList.add('reveal');
       statusHint.textContent = last.result === 'D'
-        ? (cfg.ult ? 'Every board is decided and nobody got three in a row.' : 'Nobody got three in a row.')
+        ? (cfg.ult ? 'Every board is decided and nobody got three in a row.'
+          : cfg.num ? 'All nine numbers are down and no line adds up to 15.' : 'Nobody got three in a row.')
+        : cfg.num && last.kind ? `${last.kind}, in ${last.moves} moves.`
         : cfg.ult ? `Three boards in a row, in ${last.moves} moves.`
         : cfg.cube && last.kind ? `${last.kind}, in ${last.moves} moves.`
         : cfg.grow ? `Won on a ${last.size} board.`
@@ -1644,17 +1858,20 @@
       statusHint.textContent = notice || (turn === 'X'
         ? (fadesNext ? 'Your dimmed X disappears when you play.' : cfg.fade ? 'You play X. Only three marks each.'
           : cfg.cube ? 'You play X. Three in a line, in any direction.'
-          : cfg.ult ? `Play in ${ultWhere()}.` : 'You play X. Get three in a row.')
-        : 'The AI plays O.');
+          : cfg.ult ? `Play in ${ultWhere()}.`
+          : cfg.num ? `You play ${parityOf('X')}. Make any line add up to 15.` : 'You play X. Get three in a row.')
+        : cfg.num ? `The AI plays ${parityOf('O')}.` : 'The AI plays O.');
     } else {
-      statusMain.textContent = turn + ' to move';
+      statusMain.textContent = cfg.num ? cap(parityOf(turn)) + ' to move' : turn + ' to move';
       statusHint.textContent = fadesNext ? `${n[turn]}, your dimmed ${turn} disappears when you play.`
         : cfg.cube ? n[turn] + ', pick a square on any layer.'
-        : cfg.ult ? `${n[turn]}, play in ${ultWhere()}.` : n[turn] + ', pick a square.';
+        : cfg.ult ? `${n[turn]}, play in ${ultWhere()}.`
+        : cfg.num ? `${n[turn]}, place ${article(parityOf(turn))} number.` : n[turn] + ', pick a square.';
     }
 
     const lockBoard = over || (cfg.ai && turn === 'O');
     const fadeCell = fadesNext ? marks[turn][0] : null;
+    if (cfg.num) renderNum(lockBoard);
     if (cfg.ult) renderUlt(lockBoard);
     else if (cfg.cube) cubeEls.forEach((el, i) => {
       const [z, r, c] = zrc(i);
@@ -1694,6 +1911,7 @@
       const time = new Date(h.t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
       const size = cfg.grow && h.size ? `<span class="h-size">${h.size}</span>`
         : cfg.oc && cfg.ai && h.role ? `<span class="h-size">as ${cap(h.role)}</span>`
+        : cfg.num && h.par ? `<span class="h-size">with ${h.par}</span>`
         : (cfg.fade || cfg.oc || cfg.cube || cfg.ult) && h.moves ? `<span class="h-size">${h.moves} moves</span>` : '';
       return `<li class="history-item ${h.result === 'O' ? 'o' : ''}"><span class="h-round">Round ${h.round}</span><span><span class="h-res">${resultText(h.result)}</span>${size}</span><span class="h-time">${time}</span></li>`;
     }).join('');
@@ -1730,6 +1948,11 @@
   }
   pickerEl.querySelectorAll('.pick').forEach(b => b.addEventListener('click', () => setPick(b.dataset.mark)));
   document.addEventListener('keydown', e => {
+    if (cfg && cfg.num && !gameEl.hidden && !over && !e.ctrlKey && !e.metaKey && !e.altKey && /^[1-9]$/.test(e.key)) {
+      const v = +e.key;
+      if ((cfg.ai && turn === 'O') || numUsed.has(v) || (v % 2 ? 'odd' : 'even') !== parityOf(turn)) return;
+      numPick = v; render(); return;
+    }
     if (!cfg || !cfg.oc || gameEl.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
     const k = e.key.toLowerCase();
     if (k === 'x') setPick('X');
@@ -1766,7 +1989,7 @@
     }
   });
 
-  /* ---------- Routing (#ai, #pvp, #extreme, #fading-ai, #fading-pvp, #chaos-ai, #chaos-pvp, #cube-ai, #cube-pvp, #ult-ai, #ult-pvp; anything else = start screen) ---------- */
+  /* ---------- Routing (#ai, #pvp, #extreme, #fading-ai, #fading-pvp, #chaos-ai, #chaos-pvp, #cube-ai, #cube-pvp, #ult-ai, #ult-pvp, #num-ai, #num-pvp; anything else = start screen) ---------- */
   function route() {
     clearTimeout(aiTimer);
     const key = location.hash.slice(1);
