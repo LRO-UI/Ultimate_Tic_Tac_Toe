@@ -15,6 +15,7 @@
     --bg:#0d0f14; --panel:#14171f; --panel-edge:#232732;
     --blue:#3f6fa8; --blue2:#5c7f9e; --steel:#7c8698;
     --ink:#e7eaf0; --ink-soft:#727c8c; --line:#252a35;
+    --easy:#3f6fa8; --medium:#4f9a68; --hard:#b8443f;
     --font-ui:'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-display:'Playfair Display', Georgia, 'Times New Roman', serif;
 
@@ -405,6 +406,40 @@
   }
 
 
+  /* ---------- AI level: fixed to the top right ---------- */
+  .level{
+    position:fixed; z-index:20;
+    top:calc(14px + env(safe-area-inset-top, 0px)); right:calc(16px + env(safe-area-inset-right, 0px));
+    display:flex; align-items:center; gap:6px;
+    padding:6px 6px 6px 14px;
+    background:var(--panel); border:1px solid var(--line);
+    box-shadow:inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--panel-edge);
+  }
+  .level-label{ text-transform:uppercase; letter-spacing:.26em; font-size:.62rem; color:var(--ink-soft); margin-right:4px; }
+  .tool.lvl{ width:auto; display:flex; align-items:center; gap:8px; padding:7px 12px 7px 9px; font-size:.64rem; }
+  .tool.lvl svg{ width:20px; height:20px; flex:none; transition:opacity .2s ease, transform .2s ease; }
+  .tool.lvl[aria-pressed="false"]{ color:var(--ink-soft); }
+  .tool.lvl[aria-pressed="false"] svg{ opacity:.5; transform:scale(.85); }
+  .tool.lvl.easy[aria-pressed="true"]{ border-color:var(--easy); }
+  .tool.lvl.medium[aria-pressed="true"]{ border-color:var(--medium); }
+  .tool.lvl.hard[aria-pressed="true"]{ border-color:var(--hard); }
+  .menu{ padding-top:88px; }
+  .game.has-level .stage{ padding-top:88px; }
+  .h-lvl{
+    display:inline-block; width:7px; height:7px; margin-left:8px; vertical-align:middle;
+    transform:rotate(45deg); box-shadow:0 0 0 1px rgba(231,234,240,.6);
+  }
+  .h-lvl.easy{ background:var(--easy); } .h-lvl.medium{ background:var(--medium); } .h-lvl.hard{ background:var(--hard); }
+
+  @media (max-width: 860px){
+    .level{ position:absolute; }
+    .game.has-level .stage{ padding-top:76px; }
+  }
+  @media (max-width: 520px){
+    .level-label, .tool.lvl span{ display:none; }
+    .tool.lvl{ padding:7px 9px; }
+  }
+
   @media (prefers-reduced-motion: reduce){
     .draw{ animation:none; stroke-dashoffset:0; }
     .status-main.reveal, .cell.fresh{ animation:none; }
@@ -413,6 +448,20 @@
 </style>
 </head>
 <body>
+
+<!-- ============ AI level (shared by every mode with a computer opponent) ============ -->
+<div class="level" id="level" role="group" aria-label="AI level">
+  <span class="level-label">AI level</span>
+  <button class="tool lvl easy" type="button" data-level="easy" aria-pressed="false" aria-label="Easy" title="Easy">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="7" width="18" height="18" transform="rotate(45 16 16)" fill="var(--easy)" stroke="var(--ink)" stroke-width="1.5"/></svg><span>Easy</span>
+  </button>
+  <button class="tool lvl medium" type="button" data-level="medium" aria-pressed="false" aria-label="Medium" title="Medium">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="7" width="18" height="18" transform="rotate(45 16 16)" fill="var(--medium)" stroke="var(--ink)" stroke-width="1.5"/></svg><span>Medium</span>
+  </button>
+  <button class="tool lvl hard" type="button" data-level="hard" aria-pressed="false" aria-label="Hard" title="Hard">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="7" width="18" height="18" transform="rotate(45 16 16)" fill="var(--hard)" stroke="var(--ink)" stroke-width="1.5"/></svg><span>Hard</span>
+  </button>
+</div>
 
 <!-- ============ Start screen ============ -->
 <main class="menu" id="menu">
@@ -427,7 +476,7 @@
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="mode-art" data-cells="x.o.xo..x" aria-hidden="true"></div>
       <h2>Versus AI</h2>
-      <p>You play X against the computer. It blocks most of your wins, but not all of them.</p>
+      <p>You play X against the computer. Set how strong it is with the AI level at the top right.</p>
       <a class="tool primary" href="#ai">Play vs AI</a>
     </section>
 
@@ -443,7 +492,7 @@
       <i class="rail-d tl"></i><i class="rail-d tr"></i><i class="rail-d bl"></i><i class="rail-d br"></i>
       <div class="mode-art" data-cells="xoxxooxxo" data-extreme="1" aria-hidden="true"></div>
       <h2>Extreme</h2>
-      <p>You against a sharper AI. Every draw adds a new row or column on a random side, until someone gets three in a row.</p>
+      <p>You against the AI. Every draw adds a new row or column on a random side, until someone gets three in a row.</p>
       <a class="tool primary" href="#extreme">Play Extreme</a>
     </section>
 
@@ -660,9 +709,9 @@
   const WIN_LEN = 3;
   const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
   const MODES = {
-    ai:      { title:'Versus AI',   names:{ X:'You',      O:'AI' }, ai:'easy', grow:false },
+    ai:      { title:'Versus AI',   names:{ X:'You',      O:'AI' }, ai:'classic', grow:false },
     pvp:     { title:'Two players', names:{ X:'Player X', O:'Player O' }, ai:null, grow:false },
-    extreme: { title:'Extreme',     names:{ X:'You',      O:'AI' }, ai:'hard', grow:true },
+    extreme: { title:'Extreme',     names:{ X:'You',      O:'AI' }, ai:'classic', grow:true },
     'fading-ai':  { title:'Fading vs AI',        names:{ X:'You',      O:'AI' },       ai:'fade', fade:true },
     'fading-pvp': { title:'Fading, two players', names:{ X:'Player X', O:'Player O' }, ai:null,   fade:true },
     'chaos-ai':   { title:'Order and Chaos vs AI',        names:{ X:'You',   O:'AI' },    ai:'oc', oc:true, winLen:5, size:6 },
@@ -689,6 +738,20 @@
   const menuEl = $('menu'), gameEl = $('game'), boardEl = $('board');
   const statusMain = $('statusMain'), statusHint = $('statusHint'), roundLabel = $('roundLabel');
   const nextBtn = $('nextBtn');
+
+  /* ---------- AI level: one setting shared by every AI, kept across visits ---------- */
+  const LEVEL_KEY = 'tictactoe-level-v1';
+  const LEVELS = ['easy', 'medium', 'hard'];
+  const levelEl = $('level');
+  let level = 'medium';
+  try { const v = localStorage.getItem(LEVEL_KEY); if (LEVELS.includes(v)) level = v; } catch (e) {}
+  const renderLevel = () => levelEl.querySelectorAll('.lvl').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === level)));
+  levelEl.querySelectorAll('.lvl').forEach(b => b.addEventListener('click', () => {
+    level = b.dataset.level;
+    try { localStorage.setItem(LEVEL_KEY, level); } catch (e) {}
+    renderLevel();
+  }));
+  renderLevel();
 
   /* ---------- Marks ---------- */
   const markSVG = (p, animate) => {
@@ -942,6 +1005,7 @@
       role: cfg.oc ? roleOf(result) : undefined, reason: cfg.oc ? (line ? 'five' : endReason) : undefined,
       kind: cfg.cube && line ? cubeKind(line) : cfg.num && line ? line.map(([r, c]) => grid[r][c]).join(' + ') + ' = 15' : undefined,
       par: cfg.num && result !== 'D' ? parityOf(result) : undefined,
+      lvl: cfg.ai ? level : undefined,
       boards: cfg.ult ? ult.win.filter(w => w === result).length : undefined });
     store.history = store.history.slice(0, 40);
     store.round++;
@@ -1035,18 +1099,26 @@
     return picks[0];
   }
 
-  function aiPick(level) {
+  /* Classic and Extreme. take / block: chance of spotting its own win / your win.
+     wander: chance of a random square. forks: plans double threats and defends against yours. */
+  const CLASSIC_LEVELS = {
+    easy:   { take:0.75, block:0.5,  wander:0.5, forks:false },
+    medium: { take:1,    block:0.85, wander:0.3, forks:false },
+    hard:   { take:1,    block:1,    wander:0,   forks:true }
+  };
+
+  function aiPick() {
+    const t = CLASSIC_LEVELS[level];
     const empty = emptyCells();
-    const win = winningMoves('O'); if (win.length) return rand(win);
+    const win = winningMoves('O'); if (win.length && Math.random() < t.take) return rand(win);
     const block = winningMoves('X');
 
-    if (level === 'easy') {
-      if (block.length && Math.random() > 0.15) return rand(block);
-      if (Math.random() < 0.3) return rand(empty);
+    if (!t.forks) {
+      if (block.length && Math.random() < t.block) return rand(block);
+      if (Math.random() < t.wander) return rand(empty);
       return bestByHeuristic(empty);
     }
 
-    // hard
     if (block.length) return block.length > 1 ? bestByHeuristic(block) : block[0];
     const forks = empty.filter(([r, c]) => threatsAfter('O', r, c) >= 2);
     if (forks.length) return bestByHeuristic(forks);
@@ -1070,8 +1142,13 @@
 
   /* ---------- Fading AI: looks ahead, simulating the disappearing marks ---------- */
   const FLAT_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  const FADE_DEPTH = 5;          // raise for a tougher AI, lower for an easier one
-  const FADE_SLIP = 0.1;         // chance of playing a safe but not best move
+  // depth: moves it looks ahead. slip: chance of not playing its best move.
+  // safe: when it slips, it still avoids moves that lose.
+  const FADE_LEVELS = {
+    easy:   { depth:2, slip:0.35, safe:false },
+    medium: { depth:4, slip:0.12, safe:true },
+    hard:   { depth:9, slip:0,    safe:true }
+  };
 
   const lineWin = (g, p) => FLAT_LINES.some(([a, b, c]) => g[a] === p && g[b] === p && g[c] === p);
 
@@ -1100,6 +1177,7 @@
   }
 
   function aiPickFade() {
+    const t = FADE_LEVELS[level];
     const g = grid.flat();
     const q = { X: marks.X.map(([r, c]) => r * 3 + c), O: marks.O.map(([r, c]) => r * 3 + c) };
     const scored = [];
@@ -1108,16 +1186,16 @@
       const removed = q.O.length === FADE_LIMIT ? q.O.shift() : -1;
       if (removed >= 0) g[removed] = null;
       g[i] = 'O'; q.O.push(i);
-      const score = lineWin(g, 'O') ? 1000 : fadeSearch(g, q, 'X', FADE_DEPTH - 1, -Infinity, Infinity);
+      const score = lineWin(g, 'O') ? 1000 : fadeSearch(g, q, 'X', t.depth - 1, -Infinity, Infinity);
       q.O.pop(); g[i] = null;
       if (removed >= 0) { q.O.unshift(removed); g[removed] = 'O'; }
       scored.push({ i, score: score + (i === 4 ? 0.3 : 0) + Math.random() * 0.2 });
     }
     scored.sort((a, b) => b.score - a.score);
     let pick = scored[0];
-    if (pick.score < 900 && Math.random() < FADE_SLIP) {
-      const safe = scored.filter(m => m.score > -50);
-      if (safe.length) pick = safe[Math.floor(Math.random() * safe.length)];
+    if (pick.score < 900 && Math.random() < t.slip) {
+      const pool = t.safe ? scored.filter(m => m.score > -50) : scored;
+      if (pool.length) pick = rand(pool);
     }
     return [Math.floor(pick.i / 3), pick.i % 3];
   }
@@ -1133,7 +1211,13 @@
   const OC_CELLWIN = Array.from({ length:OC_N * OC_N }, () => []);
   OC_WINDOWS.forEach((w, wi) => w.forEach(i => OC_CELLWIN[i].push(wi)));
   const OC_VAL = [0.4, 2, 7, 25, 90];
-  const OC_SLIP = 0.08;          // chance of playing one of its top three moves instead of the best
+  // slip: chance of playing one of its top `pool` moves instead of the best.
+  // guard: never slip away from a forced move (a win, a block). look: how many candidate moves Chaos checks one move further.
+  const OC_LEVELS = {
+    easy:   { slip:0.35, pool:6, guard:false, look:0 },
+    medium: { slip:0.12, pool:3, guard:true,  look:6 },
+    hard:   { slip:0,    pool:1, guard:true,  look:18 }
+  };
 
   function ocWindowCounts(g, w) {
     let x = 0, o = 0;
@@ -1191,6 +1275,7 @@
     return false;
   }
   function aiPickOC() {
+    const t = OC_LEVELS[level];
     const g = grid.flat();
     const role = roleOf('O');
     let moves;
@@ -1209,7 +1294,7 @@
         return -ocScore(g);
       });
       // look one move further for the best few: avoid leaving Order a double threat
-      moves.slice(0, 10).forEach(mv => {
+      moves.slice(0, t.look).forEach(mv => {
         if (mv.s < -1e7) return;
         g[mv.i] = mv.m;
         if (orderCanWinNext(g)) mv.s -= 1e6;
@@ -1218,9 +1303,9 @@
       moves.sort((a, b) => b.s - a.s);
     }
     let pick = moves[0];
-    if (Math.abs(pick.s) < 1e5 && Math.random() < OC_SLIP) {
-      const ok = moves.slice(0, 3).filter(mv => Math.abs(mv.s) < 1e5);
-      if (ok.length) pick = ok[Math.floor(Math.random() * ok.length)];
+    if (Math.abs(pick.s) < (t.guard ? 1e5 : 1e9) && Math.random() < t.slip) {
+      const ok = moves.slice(0, t.pool).filter(mv => !t.guard || Math.abs(mv.s) < 1e5);
+      if (ok.length) pick = rand(ok);
     }
     return [Math.floor(pick.i / OC_N), pick.i % OC_N, pick.m];
   }
@@ -1237,7 +1322,7 @@
         place(r, c, m);
         return;
       }
-      const [r, c] = cfg.ai === 'fade' ? aiPickFade() : aiPick(cfg.ai);
+      const [r, c] = cfg.ai === 'fade' ? aiPickFade() : aiPick();
       place(r, c);
     }, delay);
   }
@@ -1261,7 +1346,13 @@
     }
   })();
   const CUBE_CELL_LINES = Array.from({ length:27 }, (_, i) => CUBE_LINES.filter(l => l.includes(i)));
-  const CUBE_SLIP = 0.12;        // chance of playing one of its top three quiet moves instead of the best
+  // block: chance of spotting your open line. forks: builds its own double threats.
+  // defend: sees your double threats coming. slip: chance of playing one of its top three quiet moves instead of the best.
+  const CUBE_LEVELS = {
+    easy:   { block:0.6, forks:false, defend:false, slip:0.4 },
+    medium: { block:1,   forks:true,  defend:false, slip:0.15 },
+    hard:   { block:1,   forks:true,  defend:true,  slip:0 }
+  };
 
   let cube = [], cubeEls = [], cubeDots = [], cubeLine = null;
   const cubeEl = $('cube'), cubeViewEl = $('cubeView');
@@ -1403,17 +1494,20 @@
   }
   function cubeBest(g, cands, slip) {
     const ranked = cands.map(i => ({ i, s: cubeScore(g, i) + Math.random() * 0.4 })).sort((a, b) => b.s - a.s);
-    if (slip && Math.random() < CUBE_SLIP) return ranked[Math.floor(Math.random() * Math.min(3, ranked.length))].i;
+    if (Math.random() < slip) return ranked[Math.floor(Math.random() * Math.min(3, ranked.length))].i;
     return ranked[0].i;
   }
 
   function aiPickCube() {
     const g = cube.slice();
     const empty = g.map((v, i) => v ? -1 : i).filter(i => i >= 0);
+    const t = CUBE_LEVELS[level];
     const win = cubeWinsFor(g, 'O'); if (win.length) return win[0];
-    const block = cubeWinsFor(g, 'X'); if (block.length) return cubeBest(g, block, false);
+    const block = cubeWinsFor(g, 'X'); if (block.length && Math.random() < t.block) return cubeBest(g, block, 0);
+    if (!t.forks) return cubeBest(g, empty, t.slip);
     const forks = empty.filter(i => cubeThreatsAfter(g, 'O', i) >= 2);
-    if (forks.length) return cubeBest(g, forks, false);
+    if (forks.length) return cubeBest(g, forks, 0);
+    if (!t.defend) return cubeBest(g, empty, t.slip);
     const theirForks = empty.filter(i => cubeThreatsAfter(g, 'X', i) >= 2);
     if (theirForks.length === 1) return theirForks[0];
     if (theirForks.length > 1) {
@@ -1425,10 +1519,10 @@
         g[i] = null;
         return ok;
       });
-      if (forcing.length) return cubeBest(g, forcing, false);
-      return cubeBest(g, theirForks, false);
+      if (forcing.length) return cubeBest(g, forcing, 0);
+      return cubeBest(g, theirForks, 0);
     }
-    return cubeBest(g, empty, true);
+    return cubeBest(g, empty, t.slip);
   }
 
   cubeViewEl.querySelectorAll('.pick').forEach(b => b.addEventListener('click', () => {
@@ -1460,8 +1554,12 @@
   /* ---------- Ultimate: 81 squares, index = board * 9 + square; both run 0..8 left to right, top to bottom ---------- */
   const BOARD_NAMES = ['top left', 'top middle', 'top right', 'middle left', 'center', 'middle right', 'bottom left', 'bottom middle', 'bottom right'];
   const ULT_WEIGHT = [1.2, 1, 1.2, 1, 1.5, 1, 1.2, 1, 1.2];   // corners and center sit on more big lines
-  const ULT_THINK_MS = 350;      // raise for a tougher AI, lower for an easier one
-  const ULT_SLIP = 0.1;          // chance of playing its second choice when the two are close
+  // ms: thinking time. depth: deepest search. slip: chance of playing its second choice when the two score within `gap`.
+  const ULT_LEVELS = {
+    easy:   { ms:120,  depth:1,  slip:0.35, gap:60 },
+    medium: { ms:350,  depth:12, slip:0.1,  gap:15 },
+    hard:   { ms:1000, depth:20, slip:0,    gap:0 }
+  };
 
   let ult = null, ultLast = -1, ultCells = [], ultBoards = [], ultMarks = [];
   const ultEl = $('ult'), ultNote = $('ultNote');
@@ -1619,8 +1717,9 @@
   }
 
   function aiPickUlt() {
+    const t = ULT_LEVELS[level];
     const st = { cells:ult.cells.slice(), win:ult.win.slice(), next:ult.next };
-    const deadline = Date.now() + ULT_THINK_MS;
+    const deadline = Date.now() + t.ms;
     const STOP = {};
     let nodes = 0;
     function negamax(p, depth, alpha, beta) {
@@ -1642,7 +1741,7 @@
       return best;
     }
     let root = ultLegal(st).map(i => ({ i, s:Math.random() * 3 }));
-    for (let depth = 1; depth <= 12; depth++) {
+    for (let depth = 1; depth <= t.depth; depth++) {
       try {
         const scored = root.map(r => {
           const u = ultApply(st, r.i, 'O');
@@ -1657,7 +1756,7 @@
         break;
       }
     }
-    if (root.length > 1 && root[0].s < 9000 && root[0].s - root[1].s < 15 && Math.random() < ULT_SLIP) return root[1].i;
+    if (root.length > 1 && root[0].s < 9000 && root[0].s - root[1].s < t.gap && Math.random() < t.slip) return root[1].i;
     return root[0].i;
   }
 
@@ -1681,8 +1780,13 @@
 
   /* ---------- Numbers: 1 to 9 used once each; odd moves first; any full line adding to 15 wins ---------- */
   const NUM_SETS = { odd:[1, 3, 5, 7, 9], even:[2, 4, 6, 8] };
-  const NUM_THINK_MS = 400;      // raise for a tougher AI, lower for an easier one
-  const NUM_SLIP = 0.12;         // chance of playing any move that doesn't lose on the spot
+  // ms: thinking time. depth: deepest search. slip: chance of not playing its best move.
+  // safe: when it slips, it still avoids moves that lose on the spot.
+  const NUM_LEVELS = {
+    easy:   { ms:150, depth:2, slip:0.3,  safe:false },
+    medium: { ms:400, depth:3, slip:0.12, safe:true },
+    hard:   { ms:900, depth:9, slip:0,    safe:true }
+  };
   const numTray = $('numTray');
   let numUsed = new Set(), numOddSlot = 'X', numPick = null, numSums = [];
 
@@ -1775,8 +1879,9 @@
   /* Numbers AI: alpha-beta over (square, number) pairs, deepening until its time runs out */
   function aiPickNum() {
     const g = grid.flat();
+    const t = NUM_LEVELS[level];
     const used = new Set(numUsed);
-    const deadline = Date.now() + NUM_THINK_MS;
+    const deadline = Date.now() + t.ms;
     const STOP = {};
     let nodes = 0;
     const wins = i => FLAT_LINES.some(l => l.includes(i) && g[l[0]] && g[l[1]] && g[l[2]] && g[l[0]] + g[l[1]] + g[l[2]] === 15);
@@ -1804,7 +1909,7 @@
     }
     const par = parityOf('O'), other = par === 'odd' ? 'even' : 'odd';
     let root = movesFor(par).map(([i, n]) => ({ i, n, s:Math.random() }));
-    for (let depth = 1; depth <= 9; depth++) {
+    for (let depth = 1; depth <= t.depth; depth++) {
       try {
         root = root.map(m => {
           g[m.i] = m.n; used.add(m.n);
@@ -1819,9 +1924,9 @@
       }
     }
     let pick = root[0];
-    if (pick.s < 900 && Math.random() < NUM_SLIP) {
-      const safe = root.filter(m => m.s > -900);
-      if (safe.length) pick = safe[Math.floor(Math.random() * safe.length)];
+    if (pick.s < 900 && Math.random() < t.slip) {
+      const pool = t.safe ? root.filter(m => m.s > -900) : root;
+      if (pool.length) pick = rand(pool);
     }
     return [Math.floor(pick.i / 3), pick.i % 3, pick.n];
   }
@@ -1913,7 +2018,7 @@
         : cfg.oc && cfg.ai && h.role ? `<span class="h-size">as ${cap(h.role)}</span>`
         : cfg.num && h.par ? `<span class="h-size">with ${h.par}</span>`
         : (cfg.fade || cfg.oc || cfg.cube || cfg.ult) && h.moves ? `<span class="h-size">${h.moves} moves</span>` : '';
-      return `<li class="history-item ${h.result === 'O' ? 'o' : ''}"><span class="h-round">Round ${h.round}</span><span><span class="h-res">${resultText(h.result)}</span>${size}</span><span class="h-time">${time}</span></li>`;
+      return `<li class="history-item ${h.result === 'O' ? 'o' : ''}"><span class="h-round">Round ${h.round}</span><span><span class="h-res">${resultText(h.result)}</span>${size}${h.lvl ? `<i class="h-lvl ${h.lvl}" title="${cap(h.lvl)} AI"></i>` : ''}</span><span class="h-time">${time}</span></li>`;
     }).join('');
   }
 
@@ -1999,12 +2104,15 @@
       store = stores[mode];
       $('modeName').textContent = cfg.title;
       document.title = 'Tic Tac Toe | ' + cfg.title;
+      levelEl.hidden = !cfg.ai;
+      gameEl.classList.toggle('has-level', !!cfg.ai);
       menuEl.hidden = true;
       gameEl.hidden = false;
       newRound();
     } else {
       mode = null;
       document.title = 'Tic Tac Toe';
+      levelEl.hidden = false;
       gameEl.hidden = true;
       menuEl.hidden = false;
     }
